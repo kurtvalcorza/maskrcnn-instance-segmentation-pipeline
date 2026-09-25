@@ -1,0 +1,16 @@
+{
+  "format": "dimer_url_snapshot",
+  "formatVersion": 1,
+  "modelKey": "maskrcnn-resnet50-fpn-v2",
+  "modelId": "torchvision/maskrcnn_resnet50_fpn_v2",
+  "revision": "unpinned",
+  "files": [
+    {
+      "path": "maskrcnn_resnet50_fpn_v2_coco-73cbd019.pth",
+      "url": "https://download.pytorch.org/models/maskrcnn_resnet50_fpn_v2_coco-73cbd019.pth",
+      "bytes": null,
+      "sha256": null
+    }
+  ],
+  "totalBytes": null
+}
