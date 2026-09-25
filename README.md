@@ -2,7 +2,7 @@
 
 DIMER pipeline for **Mask R-CNN with a ResNet-50 FPN backbone and torchvision's v2 weights** (`torchvision/maskrcnn_resnet50_fpn_v2`), the reference two-stage instance segmentation model, trained on the COCO categories. The pipeline loads the checkpoint only from a digest-verified local file, returns pixel-space boxes and boolean masks with the model's softmax score under a caller-owned threshold, and adds a bounded fine-tuning workflow that re-heads the box and mask predictors onto a new class vocabulary and exports a SafeTensors adapter.
 
-> **The upstream checkpoint is pinned** (pinned 2026-09-25) to the SHA-256 of its bytes, `73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e`. The manifest records the download URL, that digest and the byte size (185,828,065); the digest starts with the `73cbd019` prefix in the file name, and the file strict-loaded into the architecture. No execution with the pinned weights is recorded yet (see [Release status](#release-status)).
+> **The upstream checkpoint is pinned** (pinned 2026-09-25) to the SHA-256 of its bytes, `73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e`. The manifest records the download URL, that digest and the byte size (185,828,065); the digest starts with the `73cbd019` prefix in the file name, and the file strict-loaded into the architecture. Default-path execution recorded on 2026-09-25 (Kaggle T4); REL12 BYOD exercise pending before promotion (see [Release status](#release-status)).
 
 ## Upstream alignment
 
@@ -63,7 +63,7 @@ weights/maskrcnn-resnet50-fpn-v2/
 
 ## Release status
 
-**Candidate.** The checkpoint is pinned (SHA-256 `73cbd0190fcb…`), but no execution with the pinned weights is recorded. Static checks, unit tests and the small-model test do not constitute notebook execution evidence; `docs/release-verification.md` defines the release gate.
+**Candidate.** The checkpoint is pinned (SHA-256 `73cbd0190fcb…`). Default-path execution recorded on 2026-09-25 (Kaggle T4): the exact notebook blob `a8f04d114788` (commit `8bd5bba`) ran top-to-bottom with both BYOD branches off. The pretrained model found 3 of 4 drawn COCO objects (sports ball missed); on one seeded split of 10 synthetic held-out sign images the fine-tune moved box `ap` 0.0347 → 0.8693 and `mask_ap` 0.0 → 1.0; one runtime. REL12 BYOD exercise pending before promotion: release step 7 has not been run. Static checks, unit tests and the small-model test do not constitute notebook execution evidence; `docs/release-verification.md` defines the release gate.
 
 ## Documentation
 

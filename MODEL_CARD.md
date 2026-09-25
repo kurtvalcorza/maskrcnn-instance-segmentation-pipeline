@@ -18,7 +18,7 @@ date_published_source: "month of the torchvision 0.13 release, the first release
 > ⚠️ **Provided for research, training, and evaluation purposes only.** Model weights are redistributed unmodified under their upstream license, which controls your use, including any commercial use or redistribution; the accompanying code and notebooks are released under this repository's license. All of it is supplied **"as is"**, without warranty of any kind, and has not been validated for production, clinical, or safety-critical use. Running the notebooks downloads third-party weights and datasets governed by their own licenses and consumes compute on your own Colab/Kaggle account. To the maximum extent permitted by law, the maintainers of this repository and the DIMER platform accept no liability for any damages arising from their use. Hosting implies no affiliation with or endorsement by the original authors.
 
 > [!IMPORTANT]
-> The upstream checkpoint is pinned to the SHA-256 of its bytes, `73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e`, and the manifest records that digest and the byte size. No execution with the pinned weights has been recorded yet, so this card claims no measured value for this repository.
+> The upstream checkpoint is pinned to the SHA-256 of its bytes, `73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e`, and the manifest records that digest and the byte size. Default-path execution recorded on 2026-09-25 (Kaggle T4); REL12 BYOD exercise pending before promotion. The measured values under Metrics come from that one run: one drawn COCO scene with four reference objects, and one seeded split of 10 synthetic held-out sign images, one runtime. They are tutorial evidence, not a benchmark.
 
 ---
 
@@ -71,7 +71,8 @@ A user is expected to know the following before relying on the output:
 - a mask is predicted at 28×28 and resized to the box, so thin structures and fine boundaries are coarse;
 - drawn graphics, documents, aerial, medical and thermal imagery are distribution shifts from COCO photographs;
 - average precision, precision and recall can only be measured on a labelled set the user supplies;
-- a fine-tune on a few dozen images demonstrates the workflow and does not produce a deployable model.
+- a fine-tune on a few dozen images demonstrates the workflow and does not produce a deployable model;
+- in the recorded tutorial run the pretrained model missed the drawn sports ball in the four-object COCO scene at the default threshold 0.75, and returned 2 instances (umbrella 0.26, bear 0.13) on a pure-noise image at the evaluation threshold 0.05.
 
 ###### Out-of-scope use cases
 
@@ -101,7 +102,7 @@ The tutorial's sample data is itself an instrument: Pillow drawings with flat co
 
 ###### Environment
 
-**Operating environment.** Python 3.12 with the pins in `pyproject.toml`: `torch==2.14.0`, `torchvision==0.29.0`, `safetensors==0.8.0`, `numpy==2.5.3`, `pillow==11.3.0`. Computation is float32. The code runs on CPU and uses CUDA automatically when available. torchvision supplies the architecture, the ROI Align operator and the training losses. No run with the pinned weights has been recorded yet, so no runtime, memory or throughput figure is given.
+**Operating environment.** Python 3.12 with the pins in `pyproject.toml`: `torch==2.14.0`, `torchvision==0.29.0`, `safetensors==0.8.0`, `numpy==2.5.3`, `pillow==11.3.0`. Computation is float32. The code runs on CPU and uses CUDA automatically when available. torchvision supplies the architecture, the ROI Align operator and the training losses. One run with the pinned weights is recorded: Kaggle Tesla T4, 2026-09-25 UTC, torch 2.14.0+cu130 (CUDA 13.0), torchvision 0.29.0+cu130, `cuda:0`. The whole notebook took 486.2 s wall including installs, one kernel restart and the 186 MB checkpoint download; the fine-tune cell (10 epochs on 30 images) took about 71 s. No memory or throughput figure was measured.
 
 **Data environment.** The pretrained model assumes a photograph of an everyday scene containing COCO objects. An adapted model assumes inference images that resemble its training images in camera, scene and object appearance. The tutorial's adaptation data is synthetic, so a model adapted on it transfers to drawn signs of the same style and to nothing else. When these assumptions fail, the model still returns instances. The pipeline reports no signal that the distribution has shifted.
 
@@ -119,7 +120,17 @@ AP summarises the precision–recall trade-off over all score levels, so it does
 
 `evaluation_report(result, references)` covers one image. It reports one `box_iou` and one `mask_iou` per supplied reference instance, against the best-overlapping instance **of the same label**, with the verdict `sample-sanity`. Without references it returns `not-measurable` and names the labelled data that would be needed.
 
-torchvision's weight metadata reports box mAP 47.4 and mask mAP 41.8 on COCO val2017. Those values are upstream-reported, and this repository does not reproduce them. No value from this repository has been recorded yet.
+torchvision's weight metadata reports box mAP 47.4 and mask mAP 41.8 on COCO val2017. Those values are upstream-reported, and this repository does not reproduce them.
+
+Values measured by this repository (one run on Kaggle Tesla T4, 2026-09-25 UTC; exact notebook blob `a8f04d114788`, commit `8bd5bba`; one pass, no dispersion estimate):
+
+- **Drawn COCO scene** (640×480, synthetic, four drawn objects, threshold 0.75): 3 instances. Stop sign `box_iou` 0.9443 / `mask_iou` 0.9837, traffic light 0.9590 / 0.9744, clock 0.9802 / 0.9882; the **sports ball was not detected** (0.0 / 0.0). This is a `sample-sanity` check on one drawn image, not a segmentation evaluation.
+- **Degenerate probes:** a blank image gave 0 instances at 0.75 and at 0.05; a noise image gave 0 at 0.75 and 2 at 0.05 (umbrella 0.26, bear 0.13).
+- **Adaptation** (drawn three-class sign dataset, 40 images / 68 instances, split seed 0 into 30 train and 10 held-out images with 17 reference instances; backbone body frozen, 22,383,143 of 45,891,175 parameters trained, 10 epochs, loss 0.9822 → 0.0863). Held-out, baseline → adapted: `ap` 0.0347 → 0.8693, `ap50` 0.1782 → 1.0, `ap75` 0.0 → 1.0, `mask_ap` 0.0 → 1.0, `mask_ap50` 0.0 → 1.0, `mask_ap75` 0.0 → 1.0. The held-out images come from the same drawing generator as the training images, so the adapted values are saturated on that split and say nothing about photographs.
+- **Unseen drawn images** (3 images, 6 instances): 6 detections, every label matched, same-label `box_iou` 0.926–0.944 and `mask_iou` 0.964–0.980.
+- **Adapter reload:** 2 instances compared, tolerance 0.001, mask IoU ≥ 0.99, equivalent.
+
+The BYOD branches were not exercised in this run.
 
 ###### Decision thresholds
 
@@ -131,7 +142,7 @@ No acceptance threshold on AP is set anywhere in the repository. The deployment 
 
 ###### Approaches to uncertainty and variability
 
-Every AP value is one pass over one held-out split: no repeated runs, no cross-validation, no bootstrap, and no confidence interval. The tutorial's held-out split has 10 synthetic images. One image more or less found moves its AP visibly, so the value is tutorial evidence only.
+Every AP value, including the recorded one, is one pass over one held-out split: no repeated runs, no cross-validation, no bootstrap, and no confidence interval. The tutorial's held-out split has 10 synthetic images. One image more or less found moves its AP visibly, so the value is tutorial evidence only.
 
 Sources of run-to-run variability:
 
@@ -216,7 +227,7 @@ The following uses are prohibited even where the model would work:
 
 ## Verification records
 
-No execution with the pinned weights has been recorded. The offline test suite runs the full `maskrcnn_resnet50_fpn_v2` architecture with random weights and a 64 px input size through fine-tuning, evaluation and adapter reload; that exercises the code path and is not a result about this model. `docs/release-verification.md` holds the release gate and the record table.
+Default-path execution recorded on 2026-09-25 (Kaggle T4): exact notebook blob `a8f04d114788` at commit `8bd5bba`, 486.2 s, 14/14 post-restart code cells, both BYOD branches off; measured values are under Metrics. REL12 BYOD exercise pending before promotion. The offline test suite runs the full `maskrcnn_resnet50_fpn_v2` architecture with random weights and a 64 px input size through fine-tuning, evaluation and adapter reload; that exercises the code path and is not a result about this model. `docs/release-verification.md` holds the release gate and the record table.
 
 ## References
 
