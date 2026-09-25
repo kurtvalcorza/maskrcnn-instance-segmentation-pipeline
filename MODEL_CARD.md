@@ -18,7 +18,7 @@ date_published_source: "month of the torchvision 0.13 release, the first release
 > ⚠️ **Provided for research, training, and evaluation purposes only.** Model weights are redistributed unmodified under their upstream license, which controls your use, including any commercial use or redistribution; the accompanying code and notebooks are released under this repository's license. All of it is supplied **"as is"**, without warranty of any kind, and has not been validated for production, clinical, or safety-critical use. Running the notebooks downloads third-party weights and datasets governed by their own licenses and consumes compute on your own Colab/Kaggle account. To the maximum extent permitted by law, the maintainers of this repository and the DIMER platform accept no liability for any damages arising from their use. Hosting implies no affiliation with or endorsement by the original authors.
 
 > [!IMPORTANT]
-> The upstream checkpoint is **not yet pinned**. `MODEL_REVISION` is the sentinel `"unpinned"` and the manifest records no SHA-256 digest and no byte size. Until `python tools/pin_snapshot.py` downloads the file, checks it, and records both, the package refuses to stage, verify or load the weights, and the tutorial cannot run.
+> The upstream checkpoint is pinned to the SHA-256 of its bytes, `73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e`, and the manifest records that digest and the byte size. No execution with the pinned weights has been recorded yet, so this card claims no measured value for this repository.
 
 ---
 
@@ -40,7 +40,7 @@ The pretrained weights come from supervised training on COCO 2017. This reposito
 
 What this repository adds to the upstream weights:
 
-- `verify_snapshot` and `stage_missing_files`: manifest checks and staging of the one checkpoint file from its manifest URL, both refusing to run while the checkpoint is unpinned;
+- `verify_snapshot` and `stage_missing_files`: manifest checks and staging of the one checkpoint file from its manifest URL, both refusing to run if `MODEL_REVISION` is ever reset to the `"unpinned"` sentinel;
 - `MaskRcnnPipeline.from_pretrained`: construction with `weights=None` (nothing downloaded by torchvision), then `torch.load(..., weights_only=True)` and `load_state_dict(strict=True)` from the verified file only;
 - `detect`: input checks, threshold checks, and score-sorted pixel-space boxes with aligned boolean masks;
 - `validate_inputs`, `validate_dataset`, `read_detection_records` and `evaluation_report`: the validation and single-image evaluation stages, with box and mask IoU;
@@ -199,9 +199,9 @@ The following uses are prohibited even where the model would work:
 ## Immutable provenance
 
 - Model: `torchvision/maskrcnn_resnet50_fpn_v2` (torchvision builder `maskrcnn_resnet50_fpn_v2`, weights `MaskRCNN_ResNet50_FPN_V2_Weights.COCO_V1`).
-- Revision: **not yet pinned** (`MODEL_REVISION = "unpinned"`). A URL-hosted file has no commit, so the pinned revision is the SHA-256 of the checkpoint's bytes. `python tools/pin_snapshot.py` downloads the file, checks that its SHA-256 starts with `73cbd019` (the prefix in its file name), strict-loads it into the architecture, and records the full digest and the byte size.
+- Revision: `73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e`. A URL-hosted file has no commit, so the pinned revision is the SHA-256 of the checkpoint's bytes. `python tools/pin_snapshot.py` pinned it on 2026-09-25: it downloaded the file, checked that its SHA-256 starts with `73cbd019` (the prefix in its file name), strict-loaded it into the architecture, and recorded the full digest and the byte size.
 - Checkpoint manifest: `weights/maskrcnn-resnet50-fpn-v2/dimer-base-manifest.json`, format `dimer_url_snapshot`, one file.
-- Checkpoint: `maskrcnn_resnet50_fpn_v2_coco-73cbd019.pth` at `https://download.pytorch.org/models/maskrcnn_resnet50_fpn_v2_coco-73cbd019.pth`; SHA-256 and byte size not yet recorded. torchvision's weight metadata lists the file as 177.219 MB.
+- Checkpoint: `maskrcnn_resnet50_fpn_v2_coco-73cbd019.pth` at `https://download.pytorch.org/models/maskrcnn_resnet50_fpn_v2_coco-73cbd019.pth`; 185,828,065 bytes, SHA-256 `73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e`. torchvision's weight metadata lists the file as 177.219 MB, which agrees.
 - Loader: `maskrcnn_resnet50_fpn_v2(weights=None, weights_backbone=None, num_classes=91)`, then `load_state_dict(torch.load(<verified file>, map_location="cpu", weights_only=True), strict=True)`.
 
 ## Input/output contract

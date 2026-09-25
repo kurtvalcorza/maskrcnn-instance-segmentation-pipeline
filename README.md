@@ -2,12 +2,12 @@
 
 DIMER pipeline for **Mask R-CNN with a ResNet-50 FPN backbone and torchvision's v2 weights** (`torchvision/maskrcnn_resnet50_fpn_v2`), the reference two-stage instance segmentation model, trained on the COCO categories. The pipeline loads the checkpoint only from a digest-verified local file, returns pixel-space boxes and boolean masks with the model's softmax score under a caller-owned threshold, and adds a bounded fine-tuning workflow that re-heads the box and mask predictors onto a new class vocabulary and exports a SafeTensors adapter.
 
-> **The upstream checkpoint is not yet pinned.** `MODEL_REVISION` is `"unpinned"` and the manifest records the download URL but no SHA-256 digest and no byte size. Every weight operation refuses to run until `python tools/pin_snapshot.py` has recorded both (see [Pinning the checkpoint](#pinning-the-checkpoint)).
+> **The upstream checkpoint is pinned** (pinned 2026-09-25) to the SHA-256 of its bytes, `73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e`. The manifest records the download URL, that digest and the byte size (185,828,065); the digest starts with the `73cbd019` prefix in the file name, and the file strict-loaded into the architecture. No execution with the pinned weights is recorded yet (see [Release status](#release-status)).
 
 ## Upstream alignment
 
 - Model: `torchvision/maskrcnn_resnet50_fpn_v2` (builder `maskrcnn_resnet50_fpn_v2`, weights `MaskRCNN_ResNet50_FPN_V2_Weights.COCO_V1`)
-- Revision: not yet pinned (`unpinned`); once pinned, the SHA-256 of the checkpoint file
+- Revision: `73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e`, the SHA-256 of the checkpoint file
 - Weights host: `https://download.pytorch.org/models/maskrcnn_resnet50_fpn_v2_coco-73cbd019.pth` (not the Hugging Face Hub)
 - Upstream code license: BSD-3-Clause (torchvision); the COCO training data carries its own terms
 - Upstream task: instance segmentation over the COCO categories (91 slots including background, 80 trained with instances)
@@ -36,12 +36,12 @@ Install into a Python 3.12 environment that already holds the pinned dependencie
 
 ## Pinning the checkpoint
 
-From the repository root, with network access to download.pytorch.org:
+The checkpoint is pinned (see [Upstream alignment](#upstream-alignment)). To re-pin it, from the repository root with network access to download.pytorch.org:
 
 1. Run `python tools/pin_snapshot.py`. It downloads the manifest URL, checks that the file's SHA-256 starts with `73cbd019` (the prefix in its name), strict-loads it into `maskrcnn_resnet50_fpn_v2`, moves it into `weights/maskrcnn-resnet50-fpn-v2/`, and writes the digest and byte size into the manifest and the digest into `MODEL_REVISION`.
 2. Commit, then run `python tools/build_notebook.py` and commit the regenerated notebook.
-3. Replace the "not yet pinned" statements in `README.md`, `MODEL_CARD.md`, `STATUS.md`, `docs/WEIGHTS.md`, `tutorials/README.md` and `docs/release-verification.md` with the digest and byte size.
-4. Run `python tools/validate_release_assets.py` and `pytest`. The validator fails while any document still says the checkpoint is not yet pinned.
+3. Update the digest and byte size cited in `README.md`, `MODEL_CARD.md`, `STATUS.md`, `docs/WEIGHTS.md`, `tutorials/README.md` and `docs/release-verification.md`.
+4. Run `python tools/validate_release_assets.py` and `pytest`. A new pin invalidates any recorded execution, so the status returns to Candidate until the new checkpoint is run.
 
 ## Weights layout
 
@@ -63,7 +63,7 @@ weights/maskrcnn-resnet50-fpn-v2/
 
 ## Release status
 
-**Candidate.** The checkpoint is not yet pinned and no execution with the pinned weights is recorded. Static checks, unit tests and the small-model test do not constitute notebook execution evidence; `docs/release-verification.md` defines the release gate.
+**Candidate.** The checkpoint is pinned (SHA-256 `73cbd0190fcb…`), but no execution with the pinned weights is recorded. Static checks, unit tests and the small-model test do not constitute notebook execution evidence; `docs/release-verification.md` defines the release gate.
 
 ## Documentation
 

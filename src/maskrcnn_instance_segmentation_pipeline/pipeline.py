@@ -23,7 +23,7 @@ from PIL import Image
 MODEL_ID = "torchvision/maskrcnn_resnet50_fpn_v2"
 # The pinned identity of a URL-hosted checkpoint is the SHA-256 of its bytes. torchvision names the file
 # after the first 8 hex digits of that digest, so the URL is content-addressed; the full digest is pinned.
-MODEL_REVISION = "unpinned"
+MODEL_REVISION = "73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e"
 MODEL_LICENSE = "bsd-3-clause"
 MODEL_KEY = "maskrcnn-resnet50-fpn-v2"
 DEFAULT_WEIGHTS_DIR = Path(__file__).resolve().parents[2] / "weights" / MODEL_KEY
