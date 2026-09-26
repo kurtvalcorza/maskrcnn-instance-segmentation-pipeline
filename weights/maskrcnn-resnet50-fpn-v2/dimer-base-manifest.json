@@ -1,0 +1,16 @@
+{
+  "format": "dimer_url_snapshot",
+  "formatVersion": 1,
+  "modelKey": "maskrcnn-resnet50-fpn-v2",
+  "modelId": "torchvision/maskrcnn_resnet50_fpn_v2",
+  "revision": "73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e",
+  "files": [
+    {
+      "path": "maskrcnn_resnet50_fpn_v2_coco-73cbd019.pth",
+      "url": "https://download.pytorch.org/models/maskrcnn_resnet50_fpn_v2_coco-73cbd019.pth",
+      "bytes": 185828065,
+      "sha256": "73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e"
+    }
+  ],
+  "totalBytes": 185828065
+}
