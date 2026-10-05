@@ -21,6 +21,27 @@ TEMPLATE = {
     "notebook_name": "maskrcnn_instance_segmentation_colab.ipynb",
     "profile": "E2E",
     "mode": "GUIDED",
+    "isolated_runtime": True,
+    "infrastructure_labels": True,
+    # The fleet's uv isolated-environment mechanism (bioclip2-biodiversity-pipeline, siglip-v1-zero-shot-pipeline): a
+    # managed CPython, a size- and SHA-256-verified uv wheel, and a lock compiled from the pyproject pins with
+    # `uv pip compile pyproject.toml --python-version 3.12 --python-platform x86_64-manylinux_2_28 --generate-hashes
+    # --only-binary :all: -o tutorials/requirements-colab.lock.txt`.
+    "managed_python": "3.12.12",
+    "uv": {
+        "version": "0.12.15",
+        "url": "https://files.pythonhosted.org/packages/1e/fd/432451d732917c49152a291de3ef171aa6b0f1a22d39780fb2c1f085ca4c/uv-0.12.15-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "bytes": 20081404,
+        "sha256": "aee9802f46bae436bd91751bb33ddeb379ef1596b5c19df193219d545d244b60",
+    },
+    "lock": "tutorials/requirements-colab.lock.txt",
+    "guided": {
+        "opening": [
+            (
+                "**Who this notebook is for.** A learner who knows basic Python, has run a Colab or Jupyter notebook, and wants to see how an instance-segmentation model finds and outlines objects, how to test it on inputs where the answer is known, and how to adapt it to classes it has never seen without fooling themselves. No prior experience with Mask R-CNN is assumed; *instance*, *mask*, *IoU*, *NMS*, *average precision* and *re-heading* are explained where they first matter and again in the **Glossary**. The intended audience is learners and practitioners preparing to adapt a detector to their own objects; this is a teaching run on drawn images, not a benchmark. A T4 GPU is the documented runtime for the fine-tuning; CPU works, much more slowly.\n\n**Input → Model → Output.**\n\n| | What it is in this notebook |\n|---|---|\n| Input | an RGB image and a detection threshold (default: a drawn 640×480 street scene with four COCO objects and exact masks; a 40-image drawn sign dataset with three new classes, split 30 / 10; BYOD: your own image or labelled directory) |\n| Model | torchvision Mask R-CNN ResNet-50 FPN v2 trained on COCO; for the new classes its box and mask predictors are re-initialised and the FPN, RPN and ROI heads are fine-tuned with the ResNet-50 body frozen |\n| Output | instances (label, score, box, mask), IoU against drawn references, box and mask AP on the held-out split before and after adaptation, a 90 MB adapter that reloads to equivalent instances |\n\n**How to use this notebook.** Choose **Runtime → Change runtime type → T4 GPU**, then **Runtime → Run all**. Run all completes in one pass: Section 1 installs nothing into the notebook's own Python, so no restart is needed. Sections 1–3 are **infrastructure** — the isolated environment, the carried package and the pinned checkpoint — and their cells are collapsed. The learning path starts in Section 4. Form fields (`# @param`) are the knobs; re-run from Section 7 after changing one (Section 7 builds a fresh re-headed model). Before each principal result the notebook asks you to **Predict**; after it comes a collapsible **Check your reasoning** with a worked answer from the recorded Kaggle T4 run of 25 September 2026 (`docs/release-verification.md`). **Troubleshooting**, a **Glossary** and a **Conclusion** template are at the end.\n\n**Roadmap:** 1–3 infrastructure → 4 the COCO model on a drawn scene *(core concept: scores, thresholds, IoU)* → 5 degenerate inputs *(evaluation practice)* → 6 a labelled dataset and its validation → 7 split, re-head and baseline *(evaluation practice)* → 8 bounded fine-tuning *(core concept)* → 9 held-out evaluation → 10 unseen images → 11 export, reload and equivalence *(engineering)* → 12 outputs → 13 your own data (optional) → interpretation, troubleshooting, glossary, conclusion."
+            )
+        ]
+    },
     "pipeline_class": "MaskRcnnPipeline",
     "weights_key": "maskrcnn-resnet50-fpn-v2",
     "weights_host": {
@@ -96,12 +117,12 @@ TEMPLATE = {
         "tracking."
     ),
     "prerequisites": [
-        "- **Runtime:** a fresh supported runtime (Google Colab or Jupyter, Python 3.12). A CUDA GPU such as a Colab or Kaggle T4 is the documented runtime for the fine-tuning stages and is used automatically when present; the notebook also runs on CPU, much more slowly. Runtimes are not measured in this revision. The pinned `torch==2.14.0` wheel and the checkpoint are the largest downloads.",
+        "- **Runtime:** a fresh supported runtime (Google Colab or Jupyter, Python 3.12). A CUDA GPU such as a Colab or Kaggle T4 is the documented runtime for the fine-tuning stages and is used automatically when present; the notebook also runs on CPU, much more slowly. Runtimes are not measured in this revision. Section 1 builds a separate environment from the hash-locked pins (nothing is installed into the notebook's own Python, so no restart is needed); its PyTorch wheels and the checkpoint are the largest downloads.",
         "- **Knowledge:** basic Python, PIL and NumPy; bounding boxes as xyxy pixel coordinates; binary masks as boolean arrays; intersection-over-union (IoU) for boxes and for masks; and how to read average precision (AP50 and AP@[.50:.95]).",
         "- **Data:** the default path generates everything in code with `samples.py` and downloads no dataset: one 640×480 COCO demonstration scene and a 40-image labelled sign dataset, each object with an exact mask. BYOD is optional and off by default. Expected BYOD input: one image, or a directory holding `annotations.json` — a list of `{'file': 'name.png', 'boxes': [[x0, y0, x1, y1], ...], 'labels': [name, ...], 'masks': ['name_mask0.png', ...]}` objects — and the image and mask files it names (one single-channel PNG per instance, non-zero pixels inside the instance). Do not upload confidential or restricted data to a hosted notebook environment unless you are authorized to do so; uploaded inputs stay in this runtime and are not sent to any inference API.",
     ],
     "run_all": (
-        "Selecting **Run all** in a fresh supported runtime installs the pinned dependencies, stages and digest-verifies the pinned checkpoint, "
+        "Selecting **Run all** in a fresh supported runtime builds an isolated environment from the hash-locked pins (nothing is installed into the notebook's own Python, so no restart is needed and Run all completes in one pass), stages and digest-verifies the pinned checkpoint, "
         "runs COCO instance segmentation on a drawn scene, validates the 40-image sign dataset, splits it into training and held-out parts, "
         "measures the pre-adaptation baseline, **runs the bounded fine-tune**, re-evaluates on the held-out split, segments unseen images, exports "
         "the adapter, reloads it onto a fresh base model to verify the instances, and writes machine-readable outputs with provenance. Nothing is "
@@ -128,7 +149,9 @@ TEMPLATE = {
                 "with the v1 weights, not re-derived for v2), and it is passed explicitly on every call. A mask pixel belongs to the instance when its predicted probability is at least `MASK_THRESHOLD` (0.5).\n\n"
                 "The scene is drawn, not photographed, so a miss here is a finding about renderings, not about photographs. The evaluation report "
                 "records every miss with `box_iou = 0.0` and `mask_iou = 0.0`. COCO mean average precision needs a labelled image set; on one scene "
-                "the verdict is `sample-sanity`."
+                "the verdict is `sample-sanity`.\n\n"
+                "**Predict:** all four drawn objects are COCO classes. Will the model find all four?\n\n"
+                + "<details><summary>Check your reasoning</summary>\n\nNo — the recorded run found three at 0.75: stop sign 0.9995, clock 0.9969, traffic light 0.9953, each with mask IoU above 0.97 against the drawn mask; the **sports ball was not detected**. A miss on a drawing is a finding about renderings, recorded with IoU 0.0, not hidden.\n\n</details>"
             ),
             "code": (
                 "import hashlib\n"
@@ -175,7 +198,9 @@ TEMPLATE = {
                 "Ask a segmentation model about structure-free input before trusting it. A model that returns confident instances on a blank canvas "
                 "or on uniform noise will return them on empty real frames too. The cell counts instances on both images at the default threshold "
                 "and at the evaluation threshold `EVAL_DETECTION_THRESHOLD` (0.05) that average precision is computed at.\n\n"
-                "**What to look for:** any instance above the default threshold on these two images is a false positive by construction."
+                "**What to look for:** any instance above the default threshold on these two images is a false positive by construction.\n\n"
+                "**Predict:** will a blank canvas or uniform noise produce any instance?\n\n"
+                + "<details><summary>Check your reasoning</summary>\n\nNot at 0.75 — the recorded run found none on either — but at the evaluation threshold 0.05 the noise image produced 2 (umbrella 0.26, bear 0.13). Low-threshold detections on nothing are why AP is computed over the whole score range and why a deployment threshold must be chosen deliberately.\n\n</details>"
             ),
             "code": (
                 "degenerate = {{}}\n"
@@ -202,7 +227,9 @@ TEMPLATE = {
                 "`validate_dataset` checks every record before any model runs: the record keys, the image size ceilings, that every box is finite, "
                 "non-empty and inside its image, that every mask has the image's shape, is boolean, is not empty and lies inside its box, and that "
                 "every label is in the vocabulary. It returns a dataset manifest with the instance count per class and a finding for any class "
-                "that has no instance."
+                "that has no instance.\n\n"
+                "**Predict:** how many instances per class will the 40 drawn images hold?\n\n"
+                + "<details><summary>Check your reasoning</summary>\n\nThe recorded run validated 40 records with 68 instances: stop-sign 20, yield-sign 24, speed-limit-sign 24. The manifest is computed before any model runs, so a malformed record is refused before training.\n\n</details>"
             ),
             "code": (
                 'N_IMAGES = 40  # @param {{type:"integer"}}\n'
@@ -231,7 +258,9 @@ TEMPLATE = {
                 "(`roi_heads.mask_predictor`, one 28×28 mask channel per class). The backbone, the FPN, the RPN and the shared ROI layers keep their "
                 "COCO weights.\n\n"
                 "**The baseline is expected to be near zero.** Randomly initialised predictors have no information about the new classes, so "
-                "this number is the floor the fine-tune has to beat, not a property of Mask R-CNN."
+                "this number is the floor the fine-tune has to beat, not a property of Mask R-CNN.\n\n"
+                "**Predict:** the old COCO model knew `stop sign`. Will the baseline score anything on `stop-sign`?\n\n"
+                + "<details><summary>Check your reasoning</summary>\n\nA little, by accident: the recorded baseline had AP50 0.5347 on stop-sign and 0.0 on the two new shapes (overall box AP50 0.1782, mask AP 0.0). The new predictors are random; transfer through the shared layers is all the baseline can show.\n\n</details>"
             ),
             "code": (
                 'HOLDOUT = 0.25  # @param {{type:"number"}}\n'
@@ -261,7 +290,9 @@ TEMPLATE = {
                 "- **Schedule:** `EPOCHS` epochs of SGD at learning rate `0.005`, momentum 0.9 and weight decay 0.0005 (the values of torchvision's "
                 "detection fine-tuning tutorial), batch size 2, float32, seed `SEED`.\n\n"
                 "**Read the loss as optimisation evidence only.** A falling loss says the optimizer is fitting the training images; the held-out "
-                "average precision in the next section is the task evidence."
+                "average precision in the next section is the task evidence.\n\n"
+                "**Predict:** by what factor will the training loss fall over 10 epochs?\n\n"
+                + "<details><summary>Check your reasoning</summary>\n\nAbout tenfold: 0.9822 at epoch 1 to 0.0863 at epoch 10 in the recorded run, with 22.4 M of 45.9 M parameters trainable. That is optimisation evidence only.\n\n</details>"
             ),
             "code": (
                 'LEARNING_RATE = 0.005  # @param {{type:"number"}}\n'
@@ -288,7 +319,9 @@ TEMPLATE = {
                 "every instance twice: once by box IoU (`ap`, `ap50`, `ap75`) and once by mask IoU (`mask_ap`, `mask_ap50`, `mask_ap75`). `ap50` is "
                 "average precision at IoU 0.50; `ap` averages AP over the ten IoU thresholds 0.50–0.95, so it also rewards tight boxes and masks. A "
                 "model can find every sign with a good box and still draw a poor mask, which only the mask rows show. These are tutorial metrics "
-                "from one pass over 10 synthetic images, with no dispersion estimate."
+                "from one pass over 10 synthetic images, with no dispersion estimate.\n\n"
+                "**Predict:** will adapted mask AP50 reach 1.0? If it does, what does that tell you?\n\n"
+                + "<details><summary>Check your reasoning</summary>\n\nIt did: every held-out metric went to 1.0 except box AP 0.8693 (from 0.0347). A saturated score on 10 drawn images from the same generator says the task is easy and the workflow works — not that the model would segment photographs of signs.\n\n</details>"
             ),
             "code": (
                 "adapted = adapter.evaluate(held_out)\n"
@@ -333,7 +366,9 @@ TEMPLATE = {
                 "`load_artifact` then builds a **fresh** pipeline from the verified base checkpoint, loads the adapter tensors onto it, and refuses "
                 "an adapter whose format, base identity, base digest or tensor set does not fit. The cell compares the reloaded instances with the "
                 "in-memory model's on an unseen image, with a stated tolerance: loading succeeding is not the check, reproducing the boxes, scores "
-                "and masks is."
+                "and masks is.\n\n"
+                "**Predict:** why compare instances after reload instead of just checking that the file loads?\n\n"
+                + "<details><summary>Check your reasoning</summary>\n\nBecause a file can load and still be the wrong weights. The recorded run compared 2 instances with tolerance 0.001 and mask IoU ≥ 0.99 and found them equivalent; any difference stops the notebook — a contract failure, not a quality result.\n\n</details>"
             ),
             "code": (
                 "artifact_path = OUTPUTS / 'maskrcnn_adapter.safetensors'\n"
@@ -444,7 +479,8 @@ TEMPLATE = {
                 "reload stages as the sample.\n\n"
                 "Set `BYOD_IMAGE_PATH` or `BYOD_DATASET_DIR` to read from a mounted or local location; leave them empty on Colab to get an upload "
                 "dialog instead. Uploaded files are written under `outputs/byod/` in this runtime and are not sent anywhere else. The first lines of "
-                "the cell show the validator refusing two malformed inputs with messages that name the failed rule."
+                "the cell show the validator refusing two malformed inputs with messages that name the failed rule. A path that does not exist, a "
+                "runtime without the upload dialog and a cancelled upload are refused with a message naming the field to set."
             ),
             "code": (
                 'USE_BYOD_IMAGE = False  # @param {{type:"boolean"}}\n'
@@ -463,14 +499,25 @@ TEMPLATE = {
                 "    except (TypeError, ValueError) as exc:\n"
                 "        print(f'refused as expected: {{desc}} -> {{type(exc).__name__}}: {{exc}}')\n\n"
                 "BYOD_DIR = OUTPUTS / 'byod'\n\n"
-                "def _upload_into(target):\n"
-                "    from google.colab import files  # type: ignore[import-not-found]\n"
+                "def _upload_into(target, field):\n"
+                "    try:\n"
+                "        from google.colab import files  # type: ignore[import-not-found]\n"
+                "    except ImportError:\n"
+                "        raise RuntimeError(f'{{field}} is empty and this runtime has no Colab upload dialog: set {{field}} to a path in this runtime') from None\n"
+                "    uploaded = files.upload() or {{}}\n"
+                "    if not uploaded:\n"
+                "        raise RuntimeError(f'the upload was cancelled or empty: run this cell again and choose the files, or set {{field}}')\n"
                 "    target.mkdir(parents=True, exist_ok=True)\n"
-                "    for name, data in files.upload().items():\n"
+                "    for name, data in uploaded.items():\n"
                 "        (target / Path(name).name).write_bytes(data)\n"
-                "    return target\n\n"
+                "    return target\n\n\n"
+                "def _existing(path_text, field, kind):\n"
+                "    path = Path(path_text.strip()).expanduser()\n"
+                "    if not (path.is_dir() if kind == 'directory' else path.is_file()):\n"
+                "        raise FileNotFoundError(f'{{field}} {{str(path)!r}} is not a {{kind}}: give the path of {{\"one image file\" if kind == \"file\" else \"the directory holding annotations.json\"}}')\n"
+                "    return path\n\n\n"
                 "if USE_BYOD_IMAGE:\n"
-                "    image_path = Path(BYOD_IMAGE_PATH) if BYOD_IMAGE_PATH else next(iter(sorted(_upload_into(BYOD_DIR / 'image').iterdir())))\n"
+                "    image_path = _existing(BYOD_IMAGE_PATH, 'BYOD_IMAGE_PATH', 'file') if BYOD_IMAGE_PATH.strip() else sorted(_upload_into(BYOD_DIR / 'image', 'BYOD_IMAGE_PATH').iterdir())[0]\n"
                 "    with Image.open(image_path) as handle:\n"
                 "        byod_image = handle.convert('RGB')\n"
                 "    print(validate_inputs(byod_image, threshold=threshold, names=[image_path.name])['verdict'])\n"
@@ -481,7 +528,7 @@ TEMPLATE = {
                 "else:\n"
                 "    print('BYOD image branch is off; set USE_BYOD_IMAGE = True to run segmentation on your own image.')\n\n"
                 "if USE_BYOD_DATASET:\n"
-                "    dataset_dir = Path(BYOD_DATASET_DIR) if BYOD_DATASET_DIR else _upload_into(BYOD_DIR / 'dataset')\n"
+                "    dataset_dir = _existing(BYOD_DATASET_DIR, 'BYOD_DATASET_DIR', 'directory') if BYOD_DATASET_DIR.strip() else _upload_into(BYOD_DIR / 'dataset', 'BYOD_DATASET_DIR')\n"
                 "    byod_records = read_detection_records(dataset_dir)\n"
                 "    byod_names = [n.strip() for n in BYOD_CLASS_NAMES.split(',') if n.strip()] or sorted({{l for r in byod_records for l in r['labels']}})\n"
                 "    byod_manifest = validate_dataset(byod_records, byod_names, epochs=EPOCHS)\n"
@@ -516,8 +563,34 @@ TEMPLATE = {
         "**Reproducibility.** Seeds are form fields (`DATASET_SEED`, `SEED`, `NEW_DATA_SEED`), the run is float32 with no data augmentation, "
         "and the new predictors are initialised under `SEED`. GPU kernels (ROI Align in particular) are not forced to be deterministic, so "
         "repeated GPU runs can differ in the last digits of the loss and the scores.\n\n"
-        "**Try next.** Change `FREEZE_BACKBONE` to `False` and compare held-out mask AP and runtime, or change `EPOCHS` and watch where "
-        "held-out mask AP stops improving. To transfer the workflow, point `BYOD_DATASET_DIR` at a small labelled set from your own domain.\n\n"
+        "## Change one thing (next experiments)\n\n"
+        "Change `FREEZE_BACKBONE` to `False` and compare held-out mask AP and runtime, or change `EPOCHS` and watch where "
+        "held-out mask AP stops improving. To transfer the workflow, point `BYOD_DATASET_DIR` at a small labelled set from your own domain. Re-run from Section 7 after any change.\n\n"
+        "## Troubleshooting\n\n"
+        "Section 1 stops with `This notebook needs a Linux x86_64 runtime`: use Google Colab, Kaggle or a Linux Jupyter host. "
+        "`The pinned uv wheel failed its size/SHA-256 check`: run Section 1 again; if it repeats, the download is being altered. "
+        "`The isolated environment's Python process exited`: the worker crashed, usually out of memory — lower `BATCH_SIZE` to 1, "
+        "restart the session and choose **Run all**. A size or SHA-256 error in Section 3: delete the checkpoint under `weights/` and "
+        "re-run Section 3. A `ValueError` from `validate_inputs` or `validate_dataset`: the message names the record and the rule — fix "
+        "the data. With BYOD: `… is not a file` / `… is not a directory`, `… no Colab upload dialog` or `the upload was cancelled or "
+        "empty` — fix the path field or the upload. An equivalence failure in Section 11: the adapter file is incomplete — delete it "
+        "and re-run Section 11. Very slow training: the runtime is CPU; switch to a T4 GPU.\n\n"
+        "## Glossary\n\n"
+        "- **Instance segmentation:** one box, one class and one pixel mask per object, so two touching objects stay separate.\n"
+        "- **Score / threshold:** the class probability after non-maximum suppression; not calibrated. The threshold decides what is kept.\n"
+        "- **NMS (non-maximum suppression):** drops overlapping boxes of the same class, keeping the highest-scoring one.\n"
+        "- **IoU:** intersection over union, for boxes or for masks.\n"
+        "- **AP / AP50:** average precision over the score ranking, at IoU 0.50 (AP50) or averaged over IoU 0.50–0.95 (AP).\n"
+        "- **Re-heading:** replacing the class-specific box and mask predictors for a new vocabulary.\n"
+        "- **Frozen backbone:** the ResNet-50 body keeps its COCO weights and BatchNorm statistics.\n"
+        "- **Adapter:** the tensors the fine-tune could change, saved with the base model's digest so it only loads onto the right base.\n"
+        "- **Isolated environment:** the separate hash-locked Python environment built in Section 1; every later cell runs there.\n\n"
+        "## Conclusion (your notes)\n\n"
+        "1. In two sentences: what did the fine-tune change, and which baseline does the held-out result beat?\n"
+        "2. Why is a perfect score on this held-out split weak evidence for photographs?\n"
+        "3. Which of your predictions were wrong, and what did the output show instead?\n"
+        "4. What labelled data would you need before trusting the adapted model on your own images?\n\n"
+        "**Your notes:**\n\n"
         "## References\n\n"
         "- He, K., Gkioxari, G., Dollár, P. and Girshick, R. (2017). *Mask R-CNN.* [arXiv:1703.06870](https://arxiv.org/abs/1703.06870).\n"
         "- Li, Y., Xie, S., Chen, X., Dollár, P., He, K. and Girshick, R. (2021). *Benchmarking Detection Transfer Learning with Vision Transformers.* [arXiv:2111.11429](https://arxiv.org/abs/2111.11429) — the paper torchvision cites for the v2 builder.\n"
