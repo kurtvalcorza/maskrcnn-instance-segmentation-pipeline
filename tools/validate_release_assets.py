@@ -38,9 +38,9 @@ WEIGHTS_URL = "https://download.pytorch.org/models/maskrcnn_resnet50_fpn_v2_coco
 EXTERNAL_ACCESS_MARKER = "- **External access:** `download.pytorch.org` only"
 REFERENCE_LINK = "https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.detection.maskrcnn_resnet50_fpn_v2.html"
 
-# NOTEBOOK_SPEC 2.1 §10.3: BYOD is gated off by default so the sample path runs top-to-bottom.
+# NOTEBOOK_SPEC 2.2 §10.3: BYOD is gated off by default so the sample path runs top-to-bottom.
 BYOD_GATES = ("USE_BYOD_IMAGE", "USE_BYOD_DATASET")
-# NOTEBOOK_SPEC 2.1 EXE2: every file-reading branch has a location field.
+# NOTEBOOK_SPEC 2.2 EXE2: every file-reading branch has a location field.
 LOCATION_FIELDS = ("BYOD_IMAGE_PATH", "BYOD_DATASET_DIR")
 
 EXPECTED_OUTPUTS = (
@@ -63,7 +63,7 @@ CODE_MARKERS = (
     "records = sign_dataset(N_IMAGES, seed=DATASET_SEED)",
     "dataset_manifest = validate_dataset(records, SIGN_CLASSES, epochs=EPOCHS)",
     "train_records, held_out = split_dataset(records, train_fraction=1.0 - HOLDOUT, seed=SEED)",
-    "adapter = MaskRcnnPipeline.from_pretrained(weights_dir=WEIGHTS_DIR, class_names=SIGN_CLASSES, seed=SEED)",
+    "return MaskRcnnPipeline.from_pretrained(weights_dir=WEIGHTS_DIR, class_names=SIGN_CLASSES, seed=SEED)",
     "baseline = adapter.evaluate(held_out)",
     "run = adapter.finetune(",
     "freeze_backbone=FREEZE_BACKBONE,",
@@ -71,8 +71,26 @@ CODE_MARKERS = (
     "new_records = sign_dataset(3, seed=NEW_DATA_SEED)",
     "descriptor = adapter.save_artifact(artifact_path, notes='Mask R-CNN ResNet-50 FPN v2 sign adaptation tutorial adapter')",
     "reloaded = MaskRcnnPipeline.load_artifact(artifact_path, weights_dir=WEIGHTS_DIR)",
-    "assert len(out_orig['detections']) == len(out_reloaded['detections'])",
-    "mask_iou(m1, m2) >= MASK_AGREEMENT",
+    # MRC-m1 (review 2026-10-02): the reload comparison is a reusable helper that raises, also used by BYOD.
+    "reload_check = reload_equivalence(adapter, reloaded, new_records[0]['image'])",
+    "mask_iou(m1, m2) < MASK_AGREEMENT",
+    # MRC-M3: every fine-tune starts from the re-headed model, and every schedule field sits in Section 8.
+    "def reset_to_pretrained():",
+    "adapter = reset_to_pretrained()",
+    "dataset_manifest = validate_dataset(records, SIGN_CLASSES, epochs=EPOCHS)",
+    "RUN_HISTORY.append(",
+    "'run_history': RUN_HISTORY,",
+    "'below_ceiling': headroom,",
+    # MRC-m1: named BYOD refusals, a BYOD manifest and results file, and a reload comparison.
+    "def _open_byod_image(path):",
+    "_existing(BYOD_DATASET_DIR, 'BYOD_DATASET_DIR', 'directory')",
+    "the upload was cancelled or empty",
+    "byod_reload_check = reload_equivalence(byod_pipe, byod_reloaded, byod_held[0]['image'])",
+    "byod_maskrcnn_input_manifest.json",
+    "byod_maskrcnn_result.json",
+    "byod_maskrcnn_detections.csv",
+    # FIX_PACKET addendum: the isolated worker's google.colab stubs carry a ModuleSpec (accelerate calls find_spec).
+    "importlib.machinery.ModuleSpec(name, None, is_package=package)",
     "hits = sum(1 for m in coco_report['metrics'] if m['mask_iou'] >= 0.5)",
     "byod_records = read_detection_records(dataset_dir)",
     "byod_pipe.finetune(byod_train",
@@ -96,6 +114,53 @@ MARKDOWN_MARKERS = (
     "COCO mean average precision needs a labelled image set",
     "AP@[.50:.95]",
     "which only the mask rows show",
+    # MRC-M3 / MRC-m3 (Kurt's task-at-ceiling rule): the saturated rows are named and explained, not compared.
+    "**A 1.0 row is a ceiling.**",
+    "**A task at its ceiling.**",
+    "**Instances that appear only at 0.05 matter too.**",
+    "**Adaptation always starts from the re-headed model.**",
+    "**Every training setting is in this cell:**",
+    # MRC-M2: the guided layer of a GUIDED notebook (NOTEBOOK_SPEC 2.2 GDL1-GDL14).
+    "**Who this is for.**",
+    "**Input → Model → Output.**",
+    "**How to use this notebook.**",
+    "**Roadmap:**",
+    "> **Infrastructure.**",
+    "## 14. Your turn — change one thing: unfreeze the backbone",
+    "Runtime → Run after",
+    "## Troubleshooting",
+    "## Glossary",
+    "## Conclusion (your notes)",
+    # MRC-m5: the environment variables that change Section 1 are documented.
+    "`DIMER_NOTEBOOK_CI_PREINSTALLED=1`",
+    "`DIMER_ISOLATED_ENV`",
+)
+# MRC-M2: Sections 4-11 ask for a prediction; the following sections and the closing open worked answers.
+GUIDED_PREDICT_SECTIONS = (4, 5, 6, 7, 8, 9, 10, 11)
+GUIDED_MIN_WORKED_ANSWERS = 9
+GLOSSARY_TERMS = (
+    "Instance segmentation",
+    "Region proposal network (RPN)",
+    "Score and threshold",
+    "NMS (non-maximum suppression)",
+    "IoU",
+    "AP50 / AP@[.50:.95]",
+    "Ceiling (saturated metric)",
+    "Re-heading",
+    "Frozen backbone",
+    "Held-out split",
+    "Adapter / reload equivalence",
+    "Isolated environment",
+)
+# Learner-facing text that must not come back (review 2026-10-02).
+STALE_MARKDOWN = (
+    "installed directly — there is no repository clone",  # MRC-M1: in-kernel install
+    "the cell stops with a restart instruction",  # MRC-M1
+    "Runtimes are not measured in this revision",  # MRC-m2
+    "Change `FREEZE_BACKBONE` to `False` and compare held-out mask AP",  # MRC-M3: compared a saturated metric
+    "a held-out part (25%, 10 images)",  # MRC-m6: counts stated as facts although they are form fields
+    "`EPOCHS` epochs of SGD",  # MRC-m6: schedule described away from its fields
+    "@@",  # an unfilled number placeholder of the template
 )
 
 # Runtime/model-library access must stay inside the carried module (ST1/ST2).
@@ -115,7 +180,8 @@ FORBIDDEN_OUTSIDE_MODULE = (
 # Specification 2.1; see docs/release-verification.md for the release gate.
 # ---------------------------------------------------------------------------
 
-NOTEBOOK_SPEC = "2.1"
+# 2.2 since the 2026-10-02 review (MRC-M1): the tutorial runs in the uv isolated environment (generator /2.1).
+NOTEBOOK_SPEC = "2.2"
 MODEL_CARD_SPEC = "1.2"
 ALLOWED_PROFILES = {"E2E", "ARTIFACT-INFERENCE", "TASK-INFERENCE", "MULTI-CAPABILITY", "SMOKE"}
 STATUS_TOKENS = ("Candidate", "Release-grade")
@@ -773,6 +839,19 @@ def _validate_notebook_content(
     )
     _validate_gates(path, code_cells)
     _validate_bootstrap_guard(path, code_cells)
+    # MRC-M1: only the uv install cell and the router run in the kernel; the install is hash-locked and Linux x86_64 only.
+    kernel = [source for _index, source, _tree in code_cells if "# dimer: kernel cell" in source]
+    _check(len(kernel) == 2, f"{path.name}: exactly the install and router cells run in the kernel, found {len(kernel)}")
+    install = next((k for k in kernel if "LOCK_TEXT = r" in k), "")
+    for needed in ('"--managed-python"', '"--require-hashes"', '"--only-binary"', '":all:"', "UV_SHA256", "LOCK_SHA256", 'platform.machine() != "x86_64"'):
+        _check(needed in install, f"{path.name}: the isolated install cell must use {needed} (uv isolated environment)")
+    learner = "\n".join(
+        text for index, text in stripped.items() if index not in embedded_indices and "# dimer: kernel cell" not in text
+    )
+    _check("from IPython" not in learner, f"{path.name}: learner cells run in the isolated environment, which has no IPython")
+    stale = [marker for marker in STALE_MARKDOWN if marker in markdown]
+    _check(not stale, f"{path.name}: stale learner-facing text: {stale}")
+    _check("Restart the runtime" not in markdown, f"{path.name}: no markdown may ask for a runtime restart (RUN1)")
     for filename in EXPECTED_OUTPUTS:
         _check(filename in code, f"{path.name}: must export {filename}")
     missing_md = [marker for marker in COMMON_MARKDOWN_MARKERS + MARKDOWN_MARKERS if marker not in markdown]
@@ -782,6 +861,54 @@ def _validate_notebook_content(
         REFERENCE_LINK in markdown,
         f"{path.name}: references must link the torchvision documentation for {model_id}",
     )
+
+
+def _section_cells(notebook: dict, number: int) -> tuple[str, str]:
+    """(markdown, code) of the stage `## <number>. ...`: its heading's markdown cell and the code cell after it."""
+    cells = notebook.get("cells", [])
+    for index, cell in enumerate(cells):
+        if cell.get("cell_type") == "markdown" and f"## {number}. " in _cell_source(cell):
+            code = next((_cell_source(c) for c in cells[index + 1 :] if c.get("cell_type") == "code"), "")
+            return _cell_source(cell), code
+    raise ValidationError(f"no '## {number}.' section in the tutorial notebook")
+
+
+def _validate_guided_layer(path: Path, notebook: dict) -> None:
+    """MRC-M2 / MRC-M3 / MRC-m6: predictions, worked answers, glossary, collapsed infrastructure, the Section 8
+    reset, and every schedule field in one cell."""
+    for number in GUIDED_PREDICT_SECTIONS:
+        md, _code = _section_cells(notebook, number)
+        _check(
+            "**Predict before running:**" in md.split(f"## {number}. ", 1)[1],
+            f"{path.name}: Section {number} must ask for a prediction before it runs (GDL6)",
+        )
+    markdown = "\n".join(_cell_source(c) for c in notebook.get("cells", []) if c.get("cell_type") == "markdown")
+    answers = markdown.count("<details><summary>Check your reasoning</summary>")
+    _check(
+        answers >= GUIDED_MIN_WORKED_ANSWERS,
+        f"{path.name}: {answers} worked answers, at least {GUIDED_MIN_WORKED_ANSWERS} expected (GDL7)",
+    )
+    glossary = markdown.split("## Glossary", 1)[-1]
+    missing = [term for term in GLOSSARY_TERMS if f"- **{term}:**" not in glossary]
+    _check(not missing, f"{path.name}: glossary misses {missing}")
+    for cell in notebook.get("cells", []):
+        if cell.get("metadata", {}).get("dimer", {}).get("embedded_module"):
+            _check(
+                cell["metadata"].get("jupyter", {}).get("source_hidden") is True,
+                f"{path.name}: carried module cells must be collapsed (GDL11)",
+            )
+    _md, code = _section_cells(notebook, 8)
+    body = _strip_comments(code)
+    reset = re.search(r"if adapter\.adapted:\n(?:[ \t]*\n)*[ \t]+adapter = reset_to_pretrained\(\)", body)
+    _check(
+        reset is not None and reset.start() < body.find("run = adapter.finetune("),
+        f"{path.name}: Section 8 must call reset_to_pretrained() before it fine-tunes an adapted model (MRC-M3)",
+    )
+    for field_name in ("EPOCHS", "LEARNING_RATE", "BATCH_SIZE", "FREEZE_BACKBONE"):
+        _check(
+            re.search(rf"^{field_name} = .*# @param", code, re.M) is not None,
+            f"{path.name}: {field_name} must be a form field in the Section 8 cell (MRC-m6: one place for the schedule)",
+        )
 
 
 def validate_notebooks() -> None:
@@ -802,6 +929,7 @@ def validate_notebooks() -> None:
     _validate_identity(path, code_cells, embedded_indices, revision)
     _validate_parity(path, notebook, code_cells, build)
     _validate_notebook_content(path, code_cells, markdown, embedded_indices)
+    _validate_guided_layer(path, notebook)
     registry = _read(tutorials / "README.md")
     _check(f"`{path.name}`" in registry, f"{path.name} missing from tutorials/README.md")
     _check(f"`{EXPECTED_PROFILE}`" in registry, f"tutorials/README.md must record `{EXPECTED_PROFILE}`")

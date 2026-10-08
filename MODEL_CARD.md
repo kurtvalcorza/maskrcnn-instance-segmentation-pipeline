@@ -227,7 +227,7 @@ The following uses are prohibited even where the model would work:
 
 ## Verification records
 
-Default-path execution recorded on 2026-09-25 (Kaggle T4): exact notebook blob `a8f04d114788` at commit `8bd5bba`, 486.2 s, 14/14 post-restart code cells, both BYOD branches off; measured values are under Metrics. REL12 BYOD exercise pending before promotion. The offline test suite runs the full `maskrcnn_resnet50_fpn_v2` architecture with random weights and a 64 px input size through fine-tuning, evaluation and adapter reload; that exercises the code path and is not a result about this model. `docs/release-verification.md` holds the release gate and the record table.
+Default-path execution recorded on 2026-09-25 (Kaggle T4): notebook blob `a8f04d114788` at commit `8bd5bba` (an earlier, in-kernel-install revision), 486.2 s, 14/14 post-restart code cells, both BYOD branches off; it passed only after a manual restart after the install cell, so it is not a one-pass Run all and not promotion evidence. Measured values are under Metrics. The regenerated notebook (uv isolated environment) has no hosted run yet; a one-pass hosted Run all and the REL12 BYOD exercise are pending before promotion. The offline test suite runs the full `maskrcnn_resnet50_fpn_v2` architecture with random weights and a 64 px input size through fine-tuning, evaluation and adapter reload; that exercises the code path and is not a result about this model. `docs/release-verification.md` holds the release gate and the record table.
 
 ## References
 

@@ -1,0 +1,168 @@
+[colab] Parsing notebook '/home/kurt/colab-runs/maskrcnn-instance-segmentation-pipeline-568eead-96a883/maskrcnn_instance_segmentation_colab_568eead_colab-cli-t4.ipynb'...
+[colab] Executing cell 1/16 - Infrastructure: install the locked runtime into an isolated environment...
+{'isolated_environment': '/content/dimer_isolated_env', 'isolated_python': '3.12.12', 'kernel_python': '3.13.15', 'locked_packages': 33, 'setup_seconds': 55}
+[colab] Executing cell 2/16 - Route the remaining cells to the isolated environment...
+Every later code cell now runs in /content/dimer_isolated_env/bin/python (pid 1164).
+[colab] Executing cell 3/16 - maskrcnn_instance_segmentation-07...
+{'notebook_source': {'repository': 'maskrcnn-instance-segmentation-pipeline', 'repository_revision': '051e57aaeb1fbc612cb8776436b6cab32925ac27', 'embedded_module': 'src/maskrcnn_instance_segmentation_pipeline/pipeline.py', 'embedded_modules': ['src/maskrcnn_instance_segmentation_pipeline/pipeline.py', 'src/maskrcnn_instance_segmentation_pipeline/samples.py'], 'module_sha256': '3579ab2decb6c691d43e32885bb37a80a54bd058ddd6d05dd04d0c0b7c4bdac7', 'generator': 'build_notebook.py/2.1', 'notebook_spec': '2.2'}, 'python': '3.12.12', 'torch': '2.14.0+cu130', 'torchvision': '0.29.0+cu130', 'numpy': '2.5.3', 'PIL': '11.3.0', 'cuda': True}
+[colab] Executing cell 4/16 - maskrcnn_instance_segmentation-09...
+[colab] Executing cell 5/16 - maskrcnn_instance_segmentation-11...
+[colab] Executing cell 6/16 - maskrcnn_instance_segmentation-13...
+{'model_id': 'torchvision/maskrcnn_resnet50_fpn_v2', 'revision': '73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e', 'license': 'bsd-3-clause', 'files': 1, 'total_bytes': 185828065}
+{'weights_dir': '/content/weights/maskrcnn-resnet50-fpn-v2', 'fetched': ['maskrcnn_resnet50_fpn_v2_coco-73cbd019.pth']}
+{'verified_files': 1, 'revision': '73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e'}
+{'device': 'cuda:0', 'source': '/content/weights/maskrcnn-resnet50-fpn-v2'}
+[colab] Executing cell 7/16 - maskrcnn_instance_segmentation-15...
+{'MIN_IMAGE_SIDE': 16, 'MAX_IMAGE_SIDE': 4096, 'MAX_DETECTIONS': 100, 'label_slots': 90, 'unannotated_slots': 10, 'DETECTION_THRESHOLD': 0.75, 'MASK_THRESHOLD': 0.5}
+{'sample_kind': 'synthetic', 'size': [640, 480], 'sha256': 'ff819833457d69be', 'references': {'stop sign': 1, 'traffic light': 1, 'clock': 1, 'sports ball': 1}}
+{'verdict': 'accepted', 'findings': [{'probe': 'threshold=1.5', 'rejected': 'threshold must be a number in [0, 1], got 1.5'}], 'inputs': [{'id': 'tutorial-scene', 'mode': 'RGB', 'size': [640, 480]}]}
+     stop sign 1.000  mask  11225 px  [51, 90, 170, 210]
+         clock 0.997  mask  15695 px  [409, 69, 551, 211]
+ traffic light 0.995  mask   7986 px  [270, 60, 324, 209]
+{'verdict': 'sample-sanity', 'n_detections': 3}
+         stop sign-0  box_iou 0.944  mask_iou 0.984  same-label 1
+     traffic light-0  box_iou 0.959  mask_iou 0.974  same-label 1
+             clock-0  box_iou 0.980  mask_iou 0.988  same-label 1
+       sports ball-0  box_iou 0.000  mask_iou 0.000  same-label 0
+3/4 drawn objects matched at mask IoU >= 0.5
+<PIL.Image.Image image mode=RGB size=640x480 at 0x7C50E0A61640>
+
+[Image saved to: /tmp/tmp08h78jhm.png]
+[colab] Executing cell 8/16 - maskrcnn_instance_segmentation-17...
+{
+  "blank": {
+    "at_default_threshold": 0,
+    "at_evaluation_threshold": 0,
+    "top": []
+  },
+  "noise": {
+    "at_default_threshold": 0,
+    "at_evaluation_threshold": 2,
+    "top": [
+      [
+        "umbrella",
+        0.26,
+        373232
+      ],
+      [
+        "bear",
+        0.13,
+        318409
+      ]
+    ]
+  }
+}
+[colab] Executing cell 9/16 - maskrcnn_instance_segmentation-19...
+{
+  "n_records": 40,
+  "n_instances": 68,
+  "class_names": [
+    "stop-sign",
+    "yield-sign",
+    "speed-limit-sign"
+  ],
+  "instances_per_class": {
+    "stop-sign": 20,
+    "yield-sign": 24,
+    "speed-limit-sign": 24
+  },
+  "findings": [],
+  "verdict": "accepted"
+}
+<PIL.Image.Image image mode=RGB size=480x320 at 0x7C50E08FE600>
+
+[Image saved to: /tmp/tmpvk95_sfg.png]
+[colab] Executing cell 10/16 - maskrcnn_instance_segmentation-21...
+{'train': 30, 'held_out': 10, 'train_instances': 51, 'held_out_instances': 17}
+{'class_names': ['stop-sign', 'yield-sign', 'speed-limit-sign'], 'device': 'cuda:0', 'reinitialised': ['roi_heads.box_predictor.', 'roi_heads.mask_predictor.']}
+{
+  "ap": 0.0347,
+  "ap50": 0.1782,
+  "mask_ap": 0.0,
+  "mask_ap50": 0.0,
+  "per_class_ap50": {
+    "stop-sign": 0.5347,
+    "yield-sign": 0.0,
+    "speed-limit-sign": 0.0
+  },
+  "n_references": 17
+}
+[colab] Executing cell 11/16 - maskrcnn_instance_segmentation-23...
+epoch 1/10  loss 0.9828
+epoch 2/10  loss 0.4013
+epoch 3/10  loss 0.2556
+epoch 4/10  loss 0.1485
+epoch 5/10  loss 0.1222
+epoch 6/10  loss 0.1080
+epoch 7/10  loss 0.1072
+epoch 8/10  loss 0.0893
+epoch 9/10  loss 0.0825
+epoch 10/10  loss 0.0842
+{
+  "freeze_backbone": true,
+  "trainable_parameters": 22383143,
+  "total_parameters": 45891175,
+  "epochs": 10,
+  "batch_size": 2,
+  "learning_rate": 0.005,
+  "optimizer": "SGD",
+  "precision": "float32",
+  "device": "cuda:0",
+  "started_from": "the re-headed checkpoint (fresh predictors, seed 0)",
+  "first_epoch_loss": 0.9828,
+  "final_loss": 0.0842,
+  "train_seconds": 73.5
+}
+[colab] Executing cell 12/16 - maskrcnn_instance_segmentation-25...
+metric       baseline    adapted     change
+ap             0.0347     0.9072    +0.8725
+ap50           0.1782     1.0000    +0.8218
+ap75           0.0000     1.0000    +1.0000
+mask_ap        0.0000     0.9823    +0.9823
+mask_ap50      0.0000     1.0000    +1.0000
+mask_ap75      0.0000     1.0000    +1.0000
+per-class mask AP50: {'stop-sign': 1.0, 'yield-sign': 1.0, 'speed-limit-sign': 1.0}
+{'at_ceiling_1.0': ['ap50', 'ap75', 'mask_ap50', 'mask_ap75'], 'below_ceiling': ['ap', 'mask_ap'], 'evaluation_threshold': 0.05}
+run history (one row per evaluation; row 0 is the first run of this session):
+0 {'freeze_backbone': True, 'epochs': 10, 'learning_rate': 0.005, 'first_epoch_loss': 0.9828, 'final_loss': 0.0842, 'ap': 0.9072, 'ap75': 1.0, 'mask_ap': 0.9823, 'mask_ap75': 1.0, 'train_seconds': 73.5}
+[colab] Executing cell 13/16 - maskrcnn_instance_segmentation-27...
+{"id": "sign-99-000", "truth": ["yield-sign", "yield-sign"], "detections": [["yield-sign", 0.995], ["yield-sign", 0.993]], "same_label_box_iou": [0.952, 0.965], "same_label_mask_iou": [0.968, 0.984]}
+{"id": "sign-99-001", "truth": ["speed-limit-sign"], "detections": [["speed-limit-sign", 0.986]], "same_label_box_iou": [0.908], "same_label_mask_iou": [0.963]}
+{"id": "sign-99-002", "truth": ["speed-limit-sign", "speed-limit-sign", "yield-sign"], "detections": [["yield-sign", 0.996], ["speed-limit-sign", 0.98], ["speed-limit-sign", 0.966]], "same_label_box_iou": [0.923, 0.889, 0.934], "same_label_mask_iou": [0.967, 0.967, 0.977]}
+6/6 reference instances found at threshold 0.75 (same label, mask IoU >= 0.5)
+[colab] Executing cell 14/16 - maskrcnn_instance_segmentation-29...
+{
+  "path": "outputs/maskrcnn_adapter.safetensors",
+  "bytes": 89577652,
+  "sha256": "ddc138f2be60d7f06d8d3831d584821dfcbd82089b57a33bf26338dd78a1110c",
+  "format": "maskrcnn-adapter-v1",
+  "class_names": [
+    "stop-sign",
+    "yield-sign",
+    "speed-limit-sign"
+  ],
+  "tensors": 114,
+  "frozen_prefixes": [
+    "backbone.body."
+  ],
+  "base_state_digest": "73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e",
+  "model_id": "torchvision/maskrcnn_resnet50_fpn_v2",
+  "model_revision": "73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e"
+}
+{'reloaded_source': 'artifact:maskrcnn_adapter.safetensors', 'adapted': True, 'class_names': ['stop-sign', 'yield-sign', 'speed-limit-sign']}
+{'instances_compared': 2, 'threshold': 0.05, 'tolerance': 0.001, 'mask_iou_at_least': 0.99, 'equivalent': True}
+[colab] Executing cell 15/16 - maskrcnn_instance_segmentation-31...
+  maskrcnn_adapter.safetensors                   89,577,652 bytes
+  maskrcnn_instance_segmentation_annotated.png       12,792 bytes
+  maskrcnn_instance_segmentation_detections.csv          624 bytes
+  maskrcnn_instance_segmentation_evaluation_report.json        2,152 bytes
+  maskrcnn_instance_segmentation_input_manifest.json        2,511 bytes
+  maskrcnn_instance_segmentation_masks.npz            2,882 bytes
+  maskrcnn_instance_segmentation_result.json          8,997 bytes
+[colab] Executing cell 16/16 - maskrcnn_instance_segmentation-33...
+refused as expected: a file that is not an image -> ValueError: notes.png is not an image Pillow can read (UnidentifiedImageError): use a PNG or JPEG file, each side 16..4096 px
+refused as expected: an empty mask -> ValueError: record 0 mask 0 is empty
+refused as expected: a normalised box -> ValueError: record 0 mask 0 extends outside its box; every coordinate of this box is between 0 and 1, which looks like normalised coordinates: boxes must be xyxy pixel coordinates (multiply x by the image width and y by its height)
+BYOD image branch is off; set USE_BYOD_IMAGE = True to run segmentation on your own image.
+BYOD dataset branch is off; set USE_BYOD_DATASET = True to adapt Mask R-CNN on your own labelled images.
+[colab] Saving notebook with outputs to '/home/kurt/colab-runs/maskrcnn-instance-segmentation-pipeline-568eead-96a883/maskrcnn_instance_segmentation_colab_568eead_colab-cli-t4_output.ipynb'...

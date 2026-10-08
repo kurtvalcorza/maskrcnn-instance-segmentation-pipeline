@@ -382,6 +382,16 @@ def validate_dataset(
         raise ValueError(f"epochs must be an int in 1..100, got {epochs!r}")
     valid = set(names)
     per_class = dict.fromkeys(names, 0)
+
+    def _pixel_hint(box_values: Sequence[float]) -> str:
+        # MRC-m1: boxes in [0, 1] are a common BYOD mistake; say so, not only which rule failed.
+        if all(0.0 <= v <= 1.0 for v in box_values):
+            return (
+                "; every coordinate of this box is between 0 and 1, which looks like normalised coordinates: "
+                "boxes must be xyxy pixel coordinates (multiply x by the image width and y by its height)"
+            )
+        return ""
+
     total = 0
     for idx, record in enumerate(records):
         if not isinstance(record, Mapping) or not {"image", "boxes", "labels", "masks"} <= set(record):
@@ -403,7 +413,7 @@ def validate_dataset(
             if not (0.0 <= x0 < x1 <= width and 0.0 <= y0 < y1 <= height):
                 raise ValueError(
                     f"record {idx} box {b_idx} [{x0}, {y0}, {x1}, {y1}] is empty or outside image bounds "
-                    f"{(width, height)}"
+                    f"{(width, height)}" + _pixel_hint((x0, y0, x1, y1))
                 )
             array = np.asarray(mask)
             if array.shape != (height, width):
@@ -416,7 +426,9 @@ def validate_dataset(
             if not len(xs):
                 raise ValueError(f"record {idx} mask {b_idx} is empty")
             if xs.min() < x0 - 1 or xs.max() + 1 > x1 + 1 or ys.min() < y0 - 1 or ys.max() + 1 > y1 + 1:
-                raise ValueError(f"record {idx} mask {b_idx} extends outside its box")
+                raise ValueError(
+                    f"record {idx} mask {b_idx} extends outside its box" + _pixel_hint((x0, y0, x1, y1))
+                )
         for label in labels:
             if label not in valid:
                 raise ValueError(f"record {idx} has unknown class {label!r}; expected one of {list(names)}")
@@ -434,6 +446,26 @@ def validate_dataset(
         ],
         "verdict": "accepted",
     }
+
+
+def _open_named(idx: int, kind: str, path: Path, root: Path) -> Image.Image:
+    """Open one BYOD file fully, or raise a ValueError that names the file and the fix (MRC-m1)."""
+    relative = path.relative_to(root) if root in path.parents else path
+    if not path.is_file():
+        raise ValueError(
+            f"annotations.json entry {idx}: {kind} file {str(relative)!r} is missing from {root}; "
+            "add the file or correct its name in annotations.json"
+        )
+    try:
+        with Image.open(path) as handle:
+            handle.load()
+            return handle.copy()
+    except (OSError, SyntaxError, ValueError) as exc:  # PIL.UnidentifiedImageError is an OSError
+        raise ValueError(
+            f"annotations.json entry {idx}: {kind} file {str(relative)!r} is not an image Pillow can "
+            f"read ({type(exc).__name__}); save it as PNG (masks: single-channel PNG, non-zero inside "
+            "the instance)"
+        ) from exc
 
 
 def read_detection_records(directory: str | Path) -> list[dict[str, Any]]:
@@ -470,12 +502,8 @@ def read_detection_records(directory: str | Path) -> list[dict[str, Any]]:
             raise ValueError(f"annotations.json entry {idx} must have 'file', 'boxes', 'labels' and 'masks'")
         image_path = resolve(idx, entry["file"])
         mask_paths = [resolve(idx, name) for name in entry["masks"]]
-        with Image.open(image_path) as handle:
-            image = handle.convert("RGB")
-        masks = []
-        for mask_path in mask_paths:
-            with Image.open(mask_path) as handle:
-                masks.append(np.asarray(handle.convert("L")) > 0)
+        image = _open_named(idx, "image", image_path, root).convert("RGB")
+        masks = [np.asarray(_open_named(idx, "mask", path, root).convert("L")) > 0 for path in mask_paths]
         records.append(
             {
                 "id": str(entry["file"]),
@@ -720,7 +748,19 @@ class MaskRcnnPipeline:
         classification and box regression, and the per-pixel mask cross-entropy. With ``freeze_backbone`` the
         ResNet-50 body keeps its weights and its BatchNorm statistics (its BatchNorm layers are held in eval
         mode); the FPN, the RPN and the ROI heads are trained. Mutates this pipeline in place.
+
+        A pipeline that is already adapted (fine-tuned, or loaded with an adapter) is refused: training it
+        again would stack a second schedule on the first while the returned record describes only the
+        second. Build a fresh re-headed pipeline with ``from_pretrained(class_names=..., seed=...)`` instead.
         """
+        if self.adapted:
+            raise RuntimeError(
+                "Cannot fine-tune: this pipeline was already adapted (fine-tuned, or loaded with an "
+                "adapter), so a second call would continue from the adapted weights while the run record "
+                "described only the new schedule. Rebuild it with MaskRcnnPipeline.from_pretrained("
+                "weights_dir=..., class_names=..., seed=...) and fine-tune that (the tutorial's "
+                "reset_to_pretrained() does this)."
+            )
         import torch
         from torchvision.transforms.functional import to_tensor
 
