@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a STANDALONE DIMER tutorial notebook (NOTEBOOK_SPEC 2.0 §4) from repository sources — /2.
+"""Generate a STANDALONE DIMER tutorial notebook (NOTEBOOK_SPEC 2.1 §4) from repository sources — /2.
 
 /2 adds to /1: multi-module packages (one tagged cell per module, topologically ordered, package-relative
 imports removed), template-declared rewrite rules, and extra pinned snapshots (`extra_weights`) for packages
@@ -557,7 +557,7 @@ def _md(source: str) -> dict[str, Any]:
 def _code(source: str, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
     return {"cell_type": "code", "execution_count": None, "id": "", "metadata": metadata or {}, "outputs": [], "source": source.rstrip("\n")}
 
-# NOTEBOOK_SPEC 2.0 §3.4/§28 declarations. A template MAY override `mode`, `run_all` and `byod`;
+# NOTEBOOK_SPEC 2.1 §3.4/§28 declarations. A template MAY override `mode`, `run_all` and `byod`;
 # E2E and ARTIFACT-INFERENCE templates MUST state `run_all` themselves (their default paths differ).
 MODES = ("REFERENCE", "GUIDED", "WORKSHOP")
 _RUN_ALL_DEFAULT = {
@@ -566,14 +566,14 @@ _RUN_ALL_DEFAULT = {
         "pinned snapshot, obtains the tutorial sample automatically, validates it into an input manifest before the model "
         "runs, runs the task locally in this kernel, writes the evaluation report, and exports machine-readable outputs "
         "with provenance. The default path needs no repository clone, no DIMER worker or service, no credential, no upload "
-        "dialog and no configuration edit (NOTEBOOK_SPEC 2.0 §5)."
+        "dialog and no configuration edit (NOTEBOOK_SPEC 2.1 §5)."
     ),
     "MULTI-CAPABILITY": (
         "Selecting **Run all** in a fresh supported runtime installs the pinned dependencies, stages and digest-verifies the "
         "pinned snapshot, obtains the tutorial sample automatically, validates it into an input manifest before the model "
         "runs, runs every demonstrated capability locally in this kernel with its own input/output contract, writes the "
         "evaluation report, and exports machine-readable outputs with provenance. The default path needs no repository "
-        "clone, no DIMER worker or service, no credential, no upload dialog and no configuration edit (NOTEBOOK_SPEC 2.0 §5)."
+        "clone, no DIMER worker or service, no credential, no upload dialog and no configuration edit (NOTEBOOK_SPEC 2.1 §5)."
     ),
 }
 _BYOD_DEFAULT = (
