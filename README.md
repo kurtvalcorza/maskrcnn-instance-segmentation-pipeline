@@ -48,7 +48,8 @@ The checkpoint is pinned (see [Upstream alignment](#upstream-alignment)). To re-
 ```
 weights/maskrcnn-resnet50-fpn-v2/
   dimer-base-manifest.json                     # modelId, revision, url, bytes + SHA-256 (1 file)
-  maskrcnn_resnet50_fpn_v2_coco-73cbd019.pth   # git-ignored; staged from download.pytorch.org
+  maskrcnn_resnet50_fpn_v2_coco-73cbd019.pth   # git-ignored; staged from download.pytorch.org, read once to convert
+  maskrcnn_resnet50_fpn_v2_coco-73cbd019.safetensors   # git-ignored; the served file, SHA-256 690c9bb4d921…
 ```
 
 ## Input ceilings and thresholds
