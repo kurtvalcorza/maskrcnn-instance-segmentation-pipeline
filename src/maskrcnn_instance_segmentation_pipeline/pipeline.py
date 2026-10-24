@@ -1,8 +1,11 @@
 """COCO instance segmentation and bounded fine-tuning with torchvision's Mask R-CNN ResNet-50 FPN v2 weights.
 
 The model is torchvision's own ``maskrcnn_resnet50_fpn_v2`` architecture, built with ``weights=None`` so
-that nothing is downloaded at construction, then loaded from one digest-verified local checkpoint file
-(``weights/<key>/``) with ``torch.load(..., weights_only=True)``, which refuses arbitrary pickled objects.
+that nothing is downloaded at construction. The upstream checkpoint is a pickled ``.pth`` file, so it is
+staged once into ``weights/<key>/``, digest-verified, read with ``torch.load(..., weights_only=True)`` (which
+refuses arbitrary pickled objects) and converted into a safetensors file whose SHA-256 is pinned below. The
+model is served only from that converted file, with ``load_state_dict(strict=True)``; once it exists the
+pickle source is never read again.
 
 Until ``tools/pin_snapshot.py`` has recorded the checkpoint's SHA-256 and byte size, the package refuses to
 stage, verify or load weights: an unpinned checkpoint is never trusted.
@@ -34,6 +37,10 @@ PIN_COMMAND = "python tools/pin_snapshot.py"
 WEIGHTS_FILE = "maskrcnn_resnet50_fpn_v2_coco-73cbd019.pth"
 WEIGHTS_URL = f"https://download.pytorch.org/models/{WEIGHTS_FILE}"
 WEIGHTS_SHA256_PREFIX = "73cbd019"
+# The served file: the checkpoint's state dict, converted once into safetensors (no code, no pickle).
+CONVERTED_WEIGHTS_FILE = "maskrcnn_resnet50_fpn_v2_coco-73cbd019.safetensors"
+CONVERTED_SHA256 = "690c9bb4d92115f5e5d378a6b4d2df1c23cc25d2f9aa47ff4e690d3cdb8ba211"
+CONVERTED_METADATA = {"format": "pt"}
 TORCHVISION_WEIGHTS = "MaskRCNN_ResNet50_FPN_V2_Weights.COCO_V1"
 
 # torchvision's COCO category list for these weights (MaskRCNN_ResNet50_FPN_V2_Weights.COCO_V1.meta
@@ -181,6 +188,55 @@ def stage_missing_files(
             raise ValueError(f"manifest URL {entry.get('url')!r} != package URL {WEIGHTS_URL!r}")
         fetch(entry, root)
     return [entry["path"] for entry in missing]
+
+
+def _write_converted(state: Mapping[str, Any], target: Path) -> None:
+    """Write a state dict as safetensors, byte-reproducibly: every tensor is cloned into its own contiguous
+    CPU storage (safetensors refuses shared storage) and the one-key metadata header has a fixed order."""
+    from safetensors.torch import save_file
+
+    tensors = {name: value.detach().to("cpu").contiguous().clone() for name, value in state.items()}
+    save_file(tensors, str(target), metadata=dict(CONVERTED_METADATA))
+
+
+def verify_converted(path: str | Path | None = None) -> dict[str, Any]:
+    """Check the converted serving file against its pinned SHA-256; raise on a missing or altered file."""
+    _require_pinned("verify the converted weights")
+    root = Path(path) if path is not None else DEFAULT_WEIGHTS_DIR
+    file_path = root / CONVERTED_WEIGHTS_FILE
+    if not file_path.is_file():
+        raise FileNotFoundError(f"converted weights missing: {file_path}")
+    digest = _sha256(file_path)
+    if digest != CONVERTED_SHA256:
+        raise ValueError(f"{CONVERTED_WEIGHTS_FILE}: sha256 {digest} != pinned {CONVERTED_SHA256}")
+    return {"path": CONVERTED_WEIGHTS_FILE, "bytes": file_path.stat().st_size, "sha256": digest}
+
+
+def convert_checkpoint(path: str | Path | None = None) -> dict[str, Any]:
+    """Convert the verified pickle checkpoint into the pinned safetensors file, once.
+
+    The source must pass `verify_snapshot` first. It is read with ``torch.load(..., weights_only=True)``,
+    must be a flat dict of tensors, and must load into the rebuilt architecture with ``strict=True``; the
+    written file must then hash to `CONVERTED_SHA256`, or it is deleted and the conversion refused."""
+    root = Path(path) if path is not None else DEFAULT_WEIGHTS_DIR
+    source = verify_snapshot(root)
+    import torch
+
+    state = torch.load(root / WEIGHTS_FILE, map_location="cpu", weights_only=True)
+    if not isinstance(state, dict) or any(not isinstance(v, torch.Tensor) for v in state.values()):
+        raise ValueError(f"{WEIGHTS_FILE} did not unpickle to a flat state dict of tensors")
+    build_model(len(COCO_CATEGORIES)).load_state_dict(state, strict=True)
+    target = root / CONVERTED_WEIGHTS_FILE
+    partial = target.with_name(target.name + ".partial")
+    _write_converted(state, partial)
+    digest = _sha256(partial)
+    if digest != CONVERTED_SHA256:
+        partial.unlink()
+        raise ValueError(
+            f"conversion of {WEIGHTS_FILE} hashed to {digest}, not the pinned {CONVERTED_SHA256}"
+        )
+    partial.replace(target)
+    return {"source": source, "converted": verify_converted(root), "tensors": len(state)}
 
 
 def box_iou(a: Sequence[float], b: Sequence[float]) -> float:
@@ -641,21 +697,24 @@ class MaskRcnnPipeline:
     ) -> MaskRcnnPipeline:
         _require_pinned("load the model")
         root = Path(weights_dir) if weights_dir is not None else DEFAULT_WEIGHTS_DIR
-        if not (root / MANIFEST_NAME).is_file():
-            raise FileNotFoundError(
-                f"no checkpoint manifest at {root}; stage {MODEL_ID} under weights/{MODEL_KEY} "
-                "(allow_download=True fetches the manifest-listed file)"
-            )
-        stage_missing_files(root, allow_download=allow_download)
-        verify_snapshot(root)
         names = _check_class_names(class_names) if class_names is not None else LABELS
+        if not (root / CONVERTED_WEIGHTS_FILE).is_file():
+            if not (root / MANIFEST_NAME).is_file():
+                raise FileNotFoundError(
+                    f"no checkpoint manifest at {root}; stage {MODEL_ID} under weights/{MODEL_KEY} "
+                    "(allow_download=True fetches the manifest-listed file)"
+                )
+            stage_missing_files(root, allow_download=allow_download)
+            verify_snapshot(root)
+            convert_checkpoint(root)
+        verify_converted(root)
 
         import torch
+        from safetensors.torch import load_file
 
         resolved_device = device or ("cuda:0" if torch.cuda.is_available() else "cpu")
         model = build_model(len(COCO_CATEGORIES))
-        state = torch.load(root / WEIGHTS_FILE, map_location="cpu", weights_only=True)
-        model.load_state_dict(state, strict=True)
+        model.load_state_dict(load_file(str(root / CONVERTED_WEIGHTS_FILE)), strict=True)
         reinitialised: tuple[str, ...] = ()
         if class_names is not None:
             torch.manual_seed(seed)
