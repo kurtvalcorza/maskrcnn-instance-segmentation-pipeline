@@ -24,8 +24,8 @@ def test_single_run_claims_that_failed_a_later_run_are_gone():
 
 def test_varying_quantities_are_stated_as_ranges_over_the_named_runs():
     md = _markdown()
-    assert "AP@[.50:.95] read 0.87 to 0.94 for boxes and 0.98 to 1.0 for masks" in md
-    assert "mask AP@[.50:.95] reached it in two of the four" in md
-    assert "`box_iou` between 0.889 and 0.982 and `mask_iou` between 0.957 and 0.984" in md
-    assert "in three of the four runs the last epoch's loss was slightly above the ninth's" in md
+    assert "AP@[.50:.95] read 0.86 to 0.94 for boxes and 0.98 to 1.0 for masks" in md
+    assert "mask AP@[.50:.95] reached it in two of the five" in md
+    assert "`box_iou` between 0.878 and 0.982 and `mask_iou` between 0.957 and 0.984" in md
+    assert "in four of the five runs the last epoch's loss was slightly above the ninth's" in md
     assert "68.3 s to 73.5 s" in md
