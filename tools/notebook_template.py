@@ -104,10 +104,11 @@ TEMPLATE = {
         "body frozen, scores the result on a held-out split with box and mask average precision (AP@[.50:.95] and AP50), runs the adapted model "
         "on unseen images, exports the changed tensors as a SafeTensors adapter, and reloads that adapter onto a fresh copy of the verified base "
         "model to check that it reproduces the same instances. Every number you see is measured in this notebook runtime. "
-        "One result is worth knowing in advance: on these drawn signs the adapted model reaches the **ceiling** of most held-out metrics — in "
-        "the recorded run every mask AP row read 1.0 — so this notebook teaches the adaptation *workflow* and how to read a saturated result, "
-        "not the size of a gain. Section 9 explains what a 1.0 row does and does not show, and Section 14 compares settings on the one "
-        "held-out number that still had headroom (box AP@[.50:.95]).\n\n"
+        "One result is worth knowing in advance: on these drawn signs the adapted model reaches or comes close to the **ceiling** of the "
+        "held-out metrics — in the Colab T4 run of blob `7d8cfa26` (`16aa1c2`, 24 October 2026, not re-run here) box and mask AP50 and AP75 read 1.0 and AP@[.50:.95] read 0.92 for boxes and 0.99 for "
+        "masks — so this notebook teaches the adaptation *workflow* and how to read a saturated result, not the size of a gain. Section 9 "
+        "explains what a 1.0 row does and does not show, and Section 14 compares settings on the rows that still have headroom (listed "
+        "under `below_ceiling`).\n\n"
         "**Who this is for.** A learner who knows basic Python and PIL, has met bounding boxes and intersection-over-union, and wants to see "
         "how a pretrained instance segmentation model is re-headed and fine-tuned for a new class vocabulary, and how the result is measured "
         "without fooling themselves. No prior experience with Mask R-CNN or fine-tuning is assumed; *instance*, *mask*, *NMS*, *re-heading* and "
@@ -159,7 +160,7 @@ TEMPLATE = {
     ),
     "prerequisites": [
         "- **Learner:** basic Python and PIL, and Colab or Jupyter familiarity; no prior experience with instance segmentation models or fine-tuning. The notebook explains region proposals, softmax scores after non-maximum suppression, masks, re-heading, AP50 and AP@[.50:.95] where they are first used; the Glossary repeats them.",
-        "- **Runtime:** a fresh supported runtime (Google Colab, Kaggle or Linux Jupyter — **Linux x86_64 only**; the notebook builds its own isolated Python 3.12.12 environment from manylinux wheels, so a Windows or macOS kernel is not supported). A CUDA GPU such as a Colab or Kaggle T4 is recommended for the fine-tune and is used automatically when present. Measured, each figure with its environment: a Kaggle Tesla T4 run of the earlier in-kernel-install revision (notebook blob `a8f04d11`, 2026-09-25, every field at its default) took 486.2 s in two passes — 377.1 s until the install cell stopped for a restart, then 109.1 s for every cell after the restart, fine-tune included; a local CPU run of this revision's learner cells at a **reduced** configuration (24-thread Windows workstation, 2026-10-06, install skipped, checkpoint pre-staged, `N_IMAGES = 8`, `EPOCHS = 1`) took 54.9 s of cell time, 5.7 s per training step of 2 images (the 2026-10-03 review measured about 30 s per step on the same workstation while it was shared with other jobs). **Estimate, not a measurement:** at that step time the default fine-tune (`EPOCHS = 10` over 30 images, 150 steps) would take about 15 minutes on such a CPU when it is otherwise idle, and over an hour at the slower step time, so use a GPU for the default path. This revision's isolated-environment build has not yet been timed on a hosted runtime; expect it to add several minutes (an estimate). The locked install (PyTorch 2.14.0 with its CUDA libraries) and the ~186 MB checkpoint are the largest downloads.",
+        "- **Runtime:** a fresh supported runtime (Google Colab, Kaggle or Linux Jupyter — **Linux x86_64 only**; the notebook builds its own isolated Python 3.12.12 environment from manylinux wheels, so a Windows or macOS kernel is not supported). A CUDA GPU such as a Colab or Kaggle T4 is recommended for the fine-tune and is used automatically when present. Measured, each figure with its environment: a Kaggle Tesla T4 run of the earlier in-kernel-install revision (notebook blob `a8f04d11`, 2026-09-25, every field at its default) took 486.2 s in two passes — 377.1 s until the install cell stopped for a restart, then 109.1 s for every cell after the restart, fine-tune included; a local CPU run of this revision's learner cells at a **reduced** configuration (24-thread Windows workstation, 2026-10-06, install skipped, checkpoint pre-staged, `N_IMAGES = 8`, `EPOCHS = 1`) took 54.9 s of cell time, 5.7 s per training step of 2 images (the 2026-10-03 review measured about 30 s per step on the same workstation while it was shared with other jobs). **Estimate, not a measurement:** at that step time the default fine-tune (`EPOCHS = 10` over 30 images, 150 steps) would take about 15 minutes on such a CPU when it is otherwise idle, and over an hour at the slower step time, so use a GPU for the default path. On a fresh Colab T4 the isolated-environment build took 51 s and the default fine-tune 69.1 s (the Colab T4 run of blob `7d8cfa26` (`16aa1c2`, 24 October 2026, not re-run here)). The locked install (PyTorch 2.14.0 with its CUDA libraries) and the ~186 MB checkpoint are the largest downloads.",
         "- **Knowledge:** basic Python, PIL and NumPy; bounding boxes as xyxy pixel coordinates; binary masks as boolean arrays; intersection-over-union (IoU) for boxes and for masks; and how to read average precision (AP50 and AP@[.50:.95]).",
         "- **Data:** the default path generates everything in code with `samples.py` and downloads no dataset: one 640×480 COCO demonstration scene and a labelled sign dataset (`N_IMAGES`, default 40 images), each object with an exact mask. BYOD is optional and off by default. Expected BYOD input: one image, or a directory holding `annotations.json` — a list of `{'file': 'name.png', 'boxes': [[x0, y0, x1, y1], ...], 'labels': [name, ...], 'masks': ['name_mask0.png', ...]}` objects with boxes in **pixel** coordinates — and the image and mask files it names (one single-channel PNG per instance, non-zero pixels inside the instance). Through the upload dialog, upload `annotations.json`, the images and the masks as **flat files (no folders)**.",
         "- **Privacy:** Do not upload confidential or restricted data to a hosted notebook environment unless you are authorized to do so; uploaded inputs stay in this runtime and are not sent to any inference API. The default path uploads nothing.",
@@ -241,8 +242,8 @@ TEMPLATE = {
         {
             "md": (
                 "**What to notice (Section 4):** the matched count, each instance's score, and the `box_iou` and `mask_iou` of each reference.\n\n"
-                "<details><summary>Check your reasoning</summary>In the recorded runs (Kaggle T4, 2026-09-25, and a local CPU run, 2026-10-03, "
-                "identical to the printed precision) the model returned `stop sign` 0.9995, `clock` 0.9969 and `traffic light` 0.9953, each with "
+                "<details><summary>Check your reasoning</summary>In the recorded runs, not re-run here (the Kaggle T4 run of blob `a8f04d11` (`8bd5bba`, 25 September 2026), a local CPU run on "
+                "2026-10-03 and the Colab T4 run of blob `7d8cfa26` on 2026-10-24, identical to the printed precision) the model returned `stop sign` 0.9995, `clock` 0.9969 and `traffic light` 0.9953, each with "
                 "mask IoU above 0.97 against the drawn mask (stop sign `box_iou` 0.944 / `mask_iou` 0.984), so 3 of the 4 drawn objects matched. "
                 "The **sports ball was not detected** and is recorded with IoU 0.0. A flat orange disc carries little of what a photograph of a "
                 "ball does (shading, seams, context), while an octagon with a word on it, a box of coloured lamps and a clock face look much like "
@@ -312,7 +313,7 @@ TEMPLATE = {
         {
             "md": (
                 "**What to notice (Section 6):** `n_records`, `n_instances` and `instances_per_class`, and in the preview each image above its mask.\n\n"
-                "<details><summary>Check your reasoning</summary>At the defaults the recorded run validated 40 records with 68 instances: "
+                "<details><summary>Check your reasoning</summary>At the defaults the Colab T4 run of blob `7d8cfa26` (`16aa1c2`, 24 October 2026, not re-run here) validated 40 records with 68 instances: "
                 "`stop-sign` 20, `yield-sign` 24, `speed-limit-sign` 24 — one to three signs per image, close to balanced. The manifest is built "
                 "before any model runs, so a malformed record is refused before training, not discovered after it.</details>\n\n"
                 "## 7. Split, re-head, and measure the pre-adaptation baseline\n\n"
@@ -353,7 +354,7 @@ TEMPLATE = {
         {
             "md": (
                 "**What to notice (Section 7):** the split sizes, the two re-initialised predictors, and the baseline per class.\n\n"
-                "<details><summary>Check your reasoning</summary>The recorded run split 30 / 10 images (51 / 17 instances) and measured a baseline "
+                "<details><summary>Check your reasoning</summary>The Colab T4 run of blob `7d8cfa26` (`16aa1c2`, 24 October 2026, not re-run here) split 30 / 10 images (51 / 17 instances) and measured a baseline "
                 "box AP50 of 0.1782 and mask AP of 0.0: AP50 0.5347 on `stop-sign` and 0.0 on the two new shapes. The predictors are random, so "
                 "whatever the baseline finds is chance passed through the shared COCO layers (why it is `stop-sign` that scores is a guess: the "
                 "COCO model knew stop signs); no mask matched at all.Near zero is the expected floor.</details>\n\n"
@@ -409,9 +410,9 @@ TEMPLATE = {
         {
             "md": (
                 "**What to notice (Section 8):** the epoch-1 loss, how fast it falls, and the trainable share of the parameters.\n\n"
-                "<details><summary>Check your reasoning</summary>The recorded run (Kaggle T4, defaults) started at 0.9822 — just below 1.0 — and "
-                "ended at 0.0863 after 10 epochs (0.9822, 0.3973, 0.2616, 0.1543, 0.1247, 0.1093, 0.1026, 0.0903, 0.0854, 0.0863): about a "
-                "tenfold fall, levelling off after epoch 7. With the ResNet-50 body frozen, 22,383,143 of 45,891,175 parameters were trainable. "
+                "<details><summary>Check your reasoning</summary>The Colab T4 run of blob `7d8cfa26` (`16aa1c2`, 24 October 2026, not re-run here) started at 0.9830 — just below 1.0 — and "
+                "ended at 0.0796 after 10 epochs (0.9830, 0.4034, 0.2651, 0.1548, 0.1250, 0.1053, 0.1004, 0.0904, 0.0849, 0.0796): about a "
+                "twelvefold fall, falling only slowly after epoch 6. With the ResNet-50 body frozen, 22,383,143 of 45,891,175 parameters were trainable. "
                 "A loss this low says the training images are fitted; it does not yet say anything about images the optimizer never saw.</details>\n\n"
                 "## 9. Evaluate on the held-out split, and what a 1.0 row means\n\n"
                 "`evaluate` re-runs on the same held-out images with the same thresholds as the baseline, so the two rows are comparable. It scores "
@@ -422,7 +423,7 @@ TEMPLATE = {
                 "metrics from one pass over the held-out images (10 at the defaults), with no dispersion estimate.\n\n"
                 "**A 1.0 row is a ceiling.** AP cannot exceed 1.0: a row reading 1.0000 means every held-out instance was found, at every IoU "
                 "threshold the row averages, and ranked above every false positive. On this drawn task the adapted model may reach that ceiling — "
-                "the recorded run did on every mask row. A saturated row cannot show a further gain, so it cannot rank two settings: two runs that "
+                "in the Colab T4 run of blob `7d8cfa26` it did on box and mask AP50 and AP75, but not on the two AP@[.50:.95] rows. A saturated row cannot show a further gain, so it cannot rank two settings: two runs that "
                 "both read 1.0 may still differ in how much margin they have. It also says the task is easy for this model at this size, not that "
                 "the model segments real signs perfectly. To compare settings, read the rows that are still below 1.0. The run-history table at "
                 "the end of the cell keeps one row per evaluation, so a Section 14 re-run prints side by side with the default run.\n\n"
@@ -452,13 +453,15 @@ TEMPLATE = {
         {
             "md": (
                 "**What to notice (Section 9):** which rows reached 1.0, which did not, and the `below_ceiling` list.\n\n"
-                "<details><summary>Check your reasoning</summary>In the recorded run (Kaggle T4, defaults) every held-out row moved from near zero "
-                "to the ceiling except one: `ap50` 0.1782 → 1.0, `ap75` 0.0 → 1.0, `mask_ap`, `mask_ap50` and `mask_ap75` 0.0 → 1.0, and every "
-                "per-class mask AP50 1.0; only box `ap` stayed below it, 0.0347 → 0.8693. Since box `ap50` and `ap75` are 1.0, the shortfall is at "
-                "the strictest box IoU thresholds (above 0.75): some boxes are not tight to the last few pixels, while the masks are. Read the "
+                "<details><summary>Check your reasoning</summary>In the Colab T4 run of blob `7d8cfa26` (`16aa1c2`, 24 October 2026, not re-run here) every held-out row moved from near zero "
+                "to or near the ceiling: `ap50` 0.1782 → 1.0, `ap75` 0.0 → 1.0, `mask_ap50` and `mask_ap75` 0.0 → 1.0 and every per-class "
+                "mask AP50 1.0, while the two AP@[.50:.95] rows stayed below it: box `ap` 0.0347 → 0.9200 and `mask_ap` 0.0 → 0.9935. Since "
+                "the AP50 and AP75 rows are 1.0, the shortfall is at the strictest IoU thresholds (above 0.75), larger for boxes than for masks. "
+                "Earlier runs put these two rows elsewhere — 0.9072 and 0.9823 in the Colab T4 run of blob `a5e05339` (2026-10-08), 0.8693 "
+                "and 1.0 in the Kaggle T4 run of blob `a8f04d11` (`8bd5bba`, 25 September 2026) — so which rows saturate varies from run to run. Read the "
                 "saturated rows as *the drawn task is solved at this size*, not as *perfect segmentation*: ten held-out images drawn by the same "
                 "generator as the training images cannot show how far the model is from failing, nor anything about photographs. That is why "
-                "Section 14 compares settings on box `ap`, the run history's one column with headroom here.</details>\n\n"
+                "Section 14 compares settings on the rows listed under `below_ceiling` in your run.</details>\n\n"
                 "## 10. Inference on unseen images\n\n"
                 "Three new images come from a seed the dataset never used (`NEW_DATA_SEED`, default 99). The adapted pipeline runs at the same "
                 "`threshold` as the COCO model (0.75), and each reference instance is compared with the best same-label instance by box IoU and "
@@ -491,9 +494,9 @@ TEMPLATE = {
         {
             "md": (
                 "**What to notice (Section 10):** the found count, each row's `detections`, and box IoU against mask IoU.\n\n"
-                "<details><summary>Check your reasoning</summary>The recorded run (Kaggle T4, defaults) returned 6 instances for the 6 reference "
-                "signs on the three unseen images, every label correct, with same-label `box_iou` 0.926–0.944 and `mask_iou` 0.964–0.980: the "
-                "masks fit more tightly than the boxes, as the held-out `ap` against `mask_ap` suggested. These images come from the same "
+                "<details><summary>Check your reasoning</summary>The Colab T4 run of blob `7d8cfa26` (`16aa1c2`, 24 October 2026, not re-run here) returned 6 instances for the 6 reference "
+                "signs on the three unseen images, every label correct, with same-label `box_iou` 0.929–0.968 and `mask_iou` 0.957–0.979: "
+                "the masks mostly fit more tightly than the boxes, as the held-out `ap` against `mask_ap` suggested. These images come from the same "
                 "drawing code as the training set, so this is a check that the adapted model generalises to new *drawings*, not to photographs.</details>\n\n"
                 "## 11. Adapter export, fresh reload, and equivalence check\n\n"
                 "`save_artifact` writes `outputs/maskrcnn_adapter.safetensors`: every tensor the fine-tune could change, plus a metadata header naming "
@@ -546,7 +549,7 @@ TEMPLATE = {
                 "**What to notice (Section 11):** `instances_compared` (never 0) and `equivalent`.\n\n"
                 "<details><summary>Check your reasoning</summary>A file can load and still hold the wrong weights — an earlier adapter, a different "
                 "base checkpoint, a tensor saved before training finished. Comparing what the reloaded model *does* catches all of those. The "
-                "recorded run wrote an 89,577,652-byte adapter of 114 tensors and found the instances equivalent at tolerance 0.001 and mask IoU ≥ "
+                "Colab T4 run of blob `7d8cfa26` wrote an 89,577,652-byte adapter of 114 tensors and found the instances equivalent at tolerance 0.001 and mask IoU ≥ "
                 "0.99; any difference stops the notebook, because it is a contract failure, not a quality result.</details>\n\n"
                 "## 12. Write machine-readable outputs and provenance\n\n"
                 "The cell writes:\n"
@@ -768,8 +771,8 @@ TEMPLATE = {
     "closing": (
         "## 14. Your turn — change one thing: unfreeze the backbone\n\n"
         "Optional; **Predict → Change → Run → Observe → Explain**. It re-runs the fine-tune with the ResNet-50 body trainable, which takes "
-        "longer than Section 8 did (about twice as many parameters get gradients). Compare on box `ap` (AP@[.50:.95]), the run history's "
-        "column that was still below 1.0 in the recorded run, and on the losses and `train_seconds`; a row that reads 1.0 in both runs "
+        "longer than Section 8 did (about twice as many parameters get gradients). Compare on box `ap` and `mask_ap` (AP@[.50:.95]), the run "
+        "history's columns that were below 1.0 in the Colab T4 run of blob `7d8cfa26`, and on the losses and `train_seconds`; a row that reads 1.0 in both runs "
         "(Section 9) cannot tell them apart.\n\n"
         "1. **Predict:** with `FREEZE_BACKBONE = False`, will held-out box `ap` go up or down against the default run, and will training take "
         "longer? Write your guess next to row 0 of the Section 9 run history.\n"
@@ -782,17 +785,17 @@ TEMPLATE = {
         "`train_seconds`.\n"
         "5. **Explain:** in one sentence, why is a change in box `ap` informative here while an unchanged `mask_ap` of 1.0 is not?\n\n"
         "<details><summary>Check your reasoning</summary>In a local CPU check of this revision (2026-10-06, real weights, reduced to `N_IMAGES = 8` and `EPOCHS = 1` for time) the re-run after a default run printed `rebuilt_from_verified_snapshot`; its box and mask predictors on entry to `finetune` were equal, tensor for tensor, to a fresh `from_pretrained(class_names=SIGN_CLASSES, seed=0)`; all 45,891,175 parameters were trained; its first-epoch loss was 2.2127, a fresh start next to the frozen run's 2.1416; and the run record said `epochs: 1`, the schedule actually applied. Before this fix (the 2026-10-02 review) the same re-run continued training the adapted model while its record said one epoch. At that reduced size neither run is near the ceiling (box `ap` 0.1966 frozen and 0.4770 unfrozen, on 2 held-out images), which is far too small a test to rank the settings. The full 10-epoch unfrozen comparison on a GPU is not recorded "
-        "for this revision, so your run history is the measurement. A `mask_ap` of 1.0 in both rows says both runs reached the ceiling on these "
-        "ten drawn images; it cannot say which has more margin. Box `ap` below 1.0 can still move. One run on 10 held-out images carries no "
+        "for this revision, so your run history is the measurement. A row that reads 1.0 in both runs says both reached the ceiling on these "
+        "ten drawn images; it cannot say which has more margin. Rows below 1.0 can still move. One run on 10 held-out images carries no "
         "dispersion estimate, so read differences of a few hundredths as unresolved, not as a ranking of the two settings.</details>\n\n"
         "## Interpretation and limits\n\n"
         "Start from your own run: the Section 9 table and its `at_ceiling_1.0` list, the Section 10 found count and the Section 11 reload "
         "check. Then read the reference answer.\n\n"
-        "<details><summary>Reference answer from the recorded run</summary>The pretrained COCO model found 3 of the 4 drawn COCO objects at "
+        "<details><summary>Reference answer from the Colab T4 run of blob `7d8cfa26` (2026-10-24, not re-run here)</summary>The pretrained COCO model found 3 of the 4 drawn COCO objects at "
         "0.75 (the sports ball was missed) and returned nothing on blank or noise images at 0.75, though noise produced 2 large instances at "
         "0.05. Re-heading onto three new sign classes started from a baseline box AP50 of 0.18 and mask AP of 0.0; a 10-epoch fine-tune "
-        "with the body frozen took every held-out mask row and box AP50 and AP75 to the ceiling of 1.0 and box AP@[.50:.95] to 0.87 "
-        "(Kaggle T4, 2026-09-25). The pretrained model already solves most of this drawn task once its predictors are re-headed, so the "
+        "with the body frozen took box and mask AP50 and AP75 to the ceiling of 1.0, box AP@[.50:.95] to 0.92 and mask AP@[.50:.95] to "
+        "0.99 (the Kaggle T4 run of blob `a8f04d11` (`8bd5bba`, 25 September 2026) gave 0.87 and 1.0). The pretrained model already solves most of this drawn task once its predictors are re-headed, so the "
         "lesson is the workflow — validate, split, baseline, fine-tune, evaluate, export, reload and compare — not the size of the gain. The "
         "adapted model found all 6 signs on the three unseen drawings, and the adapter reloaded to the same instances within 1e-3.</details>\n\n"
         "**What this notebook established, in this runtime.** The pinned torchvision checkpoint for `torchvision/maskrcnn_resnet50_fpn_v2` was "
@@ -834,7 +837,8 @@ TEMPLATE = {
         "Section 8. On a CPU runtime the fine-tune is slow, not broken (see the estimate under Prerequisites).\n"
         "- **\"Cannot fine-tune: this pipeline was already adapted\".** Something called `finetune` on a model that was already trained; "
         "Section 8 avoids this by calling `reset_to_pretrained()`. If you edited the cells, re-run from Section 7.\n"
-        "- **Every adapted row reads 1.0.** That is the recorded result on this drawn task (Section 9 explains it), not an error; compare "
+        "- **Adapted rows read 1.0.** On this drawn task that is expected for the AP50 and AP75 rows and can happen for others (Section 9 "
+        "explains it); it is not an error. Compare "
         "settings on the rows listed under `below_ceiling`.\n"
         "- **BYOD is refused.** Each refusal names the file or the rule and the fix: a path that is not a file or directory, no upload dialog "
         "outside Colab, a cancelled upload, a file Pillow cannot read, a mask file missing from the folder (usually uploaded in a sub-folder; "
@@ -864,11 +868,12 @@ TEMPLATE = {
         "4. In Section 14, unfreezing the backbone changed box `ap` by ___ and the training time by ___.\n"
         "5. What I would need before using this adapter on real images: ___.\n\n"
         "## References\n\n"
-        "- He, K., Gkioxari, G., Dollár, P. and Girshick, R. (2017). *Mask R-CNN.* [arXiv:1703.06870](https://arxiv.org/abs/1703.06870).\n"
-        "- Li, Y., Xie, S., Chen, X., Dollár, P., He, K. and Girshick, R. (2021). *Benchmarking Detection Transfer Learning with Vision Transformers.* [arXiv:2111.11429](https://arxiv.org/abs/2111.11429) — the paper torchvision cites for the v2 builder.\n"
-        "- torchvision model documentation: [maskrcnn_resnet50_fpn_v2](https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.detection.maskrcnn_resnet50_fpn_v2.html); upstream repository [pytorch/vision](https://github.com/pytorch/vision) — BSD-3-Clause.\n"
-        "- Lin, T.-Y. et al. (2014). *Microsoft COCO: Common Objects in Context.* [arXiv:1405.0312](https://arxiv.org/abs/1405.0312).\n"
-        "- Repository model card: https://github.com/kurtvalcorza/maskrcnn-instance-segmentation-pipeline/blob/main/MODEL_CARD.md\n"
-        "- [`kurtvalcorza/maskrcnn-instance-segmentation-pipeline`](https://github.com/kurtvalcorza/maskrcnn-instance-segmentation-pipeline) — source repository for this pipeline."
+        "References follow the IEEE style.\n\n"
+        "[1] K. He, G. Gkioxari, P. Dollár, and R. Girshick, \"Mask R-CNN,\" in *Proc. IEEE Int. Conf. Comput. Vis. (ICCV)*, 2017, pp. 2961–2969. [Online]. Available: https://arxiv.org/abs/1703.06870\n\n"
+        "[2] Y. Li, S. Xie, X. Chen, P. Dollár, K. He, and R. Girshick, \"Benchmarking detection transfer learning with vision transformers,\" arXiv:2111.11429, 2021 (the paper torchvision cites for the v2 builder). [Online]. Available: https://arxiv.org/abs/2111.11429\n\n"
+        "[3] T.-Y. Lin *et al.*, \"Microsoft COCO: Common objects in context,\" in *Proc. Eur. Conf. Comput. Vis. (ECCV)*, 2014, pp. 740–755. [Online]. Available: https://arxiv.org/abs/1405.0312\n\n"
+        "[4] PyTorch, \"maskrcnn_resnet50_fpn_v2,\" torchvision model documentation; upstream repository pytorch/vision (BSD-3-Clause). [Online]. Available: https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.detection.maskrcnn_resnet50_fpn_v2.html\n\n"
+        "[5] K. Valcorza, \"maskrcnn-instance-segmentation-pipeline: model card,\" GitHub. [Online]. Available: https://github.com/kurtvalcorza/maskrcnn-instance-segmentation-pipeline/blob/main/MODEL_CARD.md\n\n"
+        "[6] K. Valcorza, \"maskrcnn-instance-segmentation-pipeline,\" source repository, GitHub. [Online]. Available: https://github.com/kurtvalcorza/maskrcnn-instance-segmentation-pipeline"
     ),
 }
