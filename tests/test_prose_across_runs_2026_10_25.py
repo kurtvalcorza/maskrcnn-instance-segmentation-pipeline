@@ -28,4 +28,4 @@ def test_varying_quantities_are_stated_as_ranges_over_the_named_runs():
     assert "mask AP@[.50:.95] reached it in two of the five" in md
     assert "`box_iou` between 0.878 and 0.982 and `mask_iou` between 0.957 and 0.984" in md
     assert "in four of the five runs the last epoch's loss was slightly above the ninth's" in md
-    assert "68.3 s to 73.5 s" in md
+    assert "between 68.3 s and 73.5 s" in md
