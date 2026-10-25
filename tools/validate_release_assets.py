@@ -107,7 +107,7 @@ MARKDOWN_MARKERS = (
     "The detection threshold is a **caller-owned request parameter**",
     "class probability after torchvision's per-class non-maximum suppression (NMS), not a calibrated",
     "**Keep the two vocabularies apart.**",
-    "**The baseline is expected to be near zero.**",
+    "**The baseline is a floor.**",
     "**The ResNet-50 body is frozen.**",
     "its BatchNorm layers are held in evaluation mode",
     "**Read the loss as optimisation evidence only.**",
