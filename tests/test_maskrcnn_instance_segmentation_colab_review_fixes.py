@@ -382,7 +382,7 @@ def test_byod_image_writes_a_manifest_and_refusals_are_named(notebook_run, tmp_p
         run(13, USE_BYOD_IMAGE="True", BYOD_IMAGE_PATH=repr(str(folder / "notes.png")))
     with pytest.raises(ValueError, match="BYOD_IMAGE_PATH .* is not a file"):
         run(13, USE_BYOD_IMAGE="True", BYOD_IMAGE_PATH=repr(str(folder / "absent.png")))
-    with pytest.raises(RuntimeError, match="no Colab upload dialog"):
+    with pytest.raises(ValueError, match="no Colab upload dialog"):  # a BYODRefusal since DAT20
         run(13, USE_BYOD_DATASET="True")
 
 
