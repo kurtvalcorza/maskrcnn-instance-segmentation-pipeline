@@ -1,0 +1,80 @@
+{
+  "repo": "maskrcnn-instance-segmentation-pipeline",
+  "sha": "e5aadaecaba481d61c1c9620a9eb6fd468a3e275",
+  "notebook": "tutorials/maskrcnn_instance_segmentation_colab.ipynb",
+  "blob": "5bdb83f89dc1ce34326147541b5bbb96aca73af1",
+  "gpu": "T4",
+  "session": "suite-maskrcnn-e5aadae-96a8",
+  "started_utc": "2026-10-29T12:45:20+00:00",
+  "runner": "Colab CLI `colab exec -f` on a fresh session (not a browser Run all)",
+  "overrides": [
+    {
+      "name": "USE_BYOD_IMAGE",
+      "from": "False",
+      "to": "True"
+    },
+    {
+      "name": "BYOD_IMAGE_PATH",
+      "from": "\\\"\\\"",
+      "to": "'/etc/hostname'"
+    }
+  ],
+  "run_copy_blob": "f476d79b776b9a5a50501713d762b1679dfc40ed",
+  "run_copy_sha256": "820d2386442b31432eb4c8bd9d03fc7579d8fab883965095dafff2d21acc75c1",
+  "run_copy_note": "refusal run: the run copy is the committed notebook with the listed assignment overrides, cut immediately after the refusal cell and re-serialised (nbformat layout); input_unchanged compares against that copy",
+  "truncated_after_cell": "maskrcnn_instance_segmentation-33",
+  "refusal_cell_ref": "maskrcnn_instance_segmentation-33",
+  "refusal_cell_index": 16,
+  "cells_dropped": 1,
+  "code_cells_dropped": 0,
+  "original_sha256": "5ff339b96e8931e3c8c1615730e8105f1e2146ab3932ad6669f023173e7738c2",
+  "status": "[suite-maskrcnn-e5aadae-96a8] gpu-t4-s-usw4a0-ar9d8edeawza | Hardware: T4 | Shape: Standard | Variant: GPU | Status: IDLE",
+  "exec_exit_code": 0,
+  "stopped": true,
+  "stop_verified": true,
+  "wall_s": 182.3,
+  "input_unchanged": true,
+  "executed_file": "maskrcnn_instance_segmentation_colab_e5aadae_colab-cli-t4_output.ipynb",
+  "log_cells": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "log_total": 16,
+  "code_cells": 16,
+  "executed_cells": 14,
+  "errors": [
+    {
+      "cell": "maskrcnn_instance_segmentation-33",
+      "ename": "IsolatedCellRefusal",
+      "evalue": "hostname: hostname is not an image Pillow can read (UnidentifiedImageError): use a PNG or JPEG file, each side 16..4096 px; fix the input and run this cell again (the earlier BYOD results of this session and their outputs/ files were removed)."
+    }
+  ],
+  "execution_counts": [],
+  "sequential": null,
+  "executed_sha256": "310f011091a7c6134191086b7376501ff993dc2ca2d3624d589dddc804f85288",
+  "log_sequential_complete": true,
+  "mode": "expect_refusal",
+  "refusal_line": "Refused: hostname: hostname is not an image Pillow can read (UnidentifiedImageError): use a PNG or JPEG file, each side 16..4096 px; fix the input and run this cell again (the earlier BYOD results of this session and their outputs/ files were removed).",
+  "halting_cell_index": 16,
+  "halting_cell_id": "maskrcnn_instance_segmentation-33",
+  "error_cells": [
+    16
+  ],
+  "refusal_fail_reasons": [],
+  "refusal_ok": true,
+  "verdict": "PASS"
+}
