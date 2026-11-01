@@ -79,7 +79,7 @@ def test_only_the_uv_install_and_router_cells_run_in_the_kernel():
     assert '"--require-hashes", "--only-binary", ":all:"' in install and '"--managed-python"' in install
     assert 'platform.machine() != "x86_64"' in install
     lock = (ROOT / "tutorials" / "requirements-colab.lock.txt").read_text(encoding="utf-8")
-    for pin in ("torch==2.14.0", "torchvision==0.29.0", "safetensors==0.8.0", "numpy==2.5.3", "pillow==11.3.0"):
+    for pin in ("torch==2.14.0", "torchvision==0.29.0", "safetensors==0.8.0", "numpy==2.5.3", "pillow==13.0.0"):
         assert f"\n{pin} \\" in lock
     markdown = _markdown(nb)
     assert "Restart the runtime" not in markdown and "the cell stops with a restart instruction" not in markdown
